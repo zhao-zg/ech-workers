@@ -54,16 +54,16 @@ jobs:
     
     - name: Prepare Go module
       run: |
+        go mod download
         cd tunnel
         go mod download
         go mod verify
-        go list -m all
     
     - name: Build Go library
       run: |
         export PATH=$PATH:$(go env GOPATH)/bin
         mkdir -p android/src/main/jniLibs
-        gomobile bind -v -target=android -androidapi=24 -o android/src/main/jniLibs/workers.aar ./tunnel
+        gomobile bind -v -target=android -androidapi=24 -o android/src/main/jniLibs/workers.aar github.com/zhao-zg/ech-workers/tunnel
     
     - name: Cache Gradle packages
       uses: actions/cache@v4
