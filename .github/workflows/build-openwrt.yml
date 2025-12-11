@@ -53,7 +53,6 @@ jobs:
     
     - name: Build Go binary
       run: |
-        cd tunnel
         # Determine target architecture
         case "${{ matrix.target.arch }}" in
           x86_64)
@@ -70,9 +69,9 @@ jobs:
         export GOOS=linux
         export CGO_ENABLED=0
         
-        # Build static binary
+        # Build static binary from root cmd directory
         go build -v -trimpath -ldflags "-s -w -X main.version=1.1.0" \
-          -o ../openwrt/ech-workers ./cmd/ech-workers
+          -o ./openwrt/ech-workers ./cmd/ech-workers
     
     - name: Copy package files
       run: |
