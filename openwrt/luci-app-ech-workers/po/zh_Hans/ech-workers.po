@@ -28,17 +28,17 @@ msgstr "未运行"
 msgid "Checking..."
 msgstr "检查中..."
 
-msgid "Basic Settings"
-msgstr "基本设置"
+msgid "Connection Test"
+msgstr "连接测试"
 
-msgid "Enable"
-msgstr "启用"
+msgid "Test proxy connectivity by accessing foreign websites"
+msgstr "测试代理连接是否正常（未启用时也可测试）"
 
-msgid "Listen Address"
-msgstr "监听地址"
+msgid "Server Configuration"
+msgstr "服务器配置"
 
-msgid "Local proxy listen address and port (e.g., 0.0.0.0:1080)"
-msgstr "本地代理监听地址和端口（例如：0.0.0.0:1080）"
+msgid "Enable Service"
+msgstr "启用服务"
 
 msgid "Server Address"
 msgstr "服务器地址"
@@ -46,8 +46,14 @@ msgstr "服务器地址"
 msgid "Cloudflare Workers server address (format: domain:port/path)"
 msgstr "Cloudflare Workers 服务器地址（格式：域名:端口/路径）"
 
-msgid "Preferred IP (domain name)"
-msgstr "优选IP（域名）"
+msgid "Listen Address"
+msgstr "监听地址"
+
+msgid "Local proxy listen address and port (e.g., 0.0.0.0:20001)"
+msgstr "本地代理监听地址和端口（例如：0.0.0.0:20001）"
+
+msgid "Preferred IP"
+msgstr "优选IP"
 
 msgid "Optional: Specify the server IP or domain name to bypass DNS resolution"
 msgstr "可选：指定服务器IP或域名以绕过DNS解析"
@@ -64,8 +70,35 @@ msgstr "身份令牌"
 msgid "Optional: Token for server authentication"
 msgstr "可选：用于服务器身份验证的令牌"
 
-msgid "ECH Settings"
-msgstr "ECH 设置"
+msgid "Routing Configuration"
+msgstr "路由配置"
+
+msgid "Routing Mode"
+msgstr "路由模式"
+
+msgid "Select traffic routing strategy"
+msgstr "选择流量路由策略"
+
+msgid "Global Proxy"
+msgstr "全局代理"
+
+msgid "Bypass China Mainland"
+msgstr "跳过中国大陆"
+
+msgid "Direct Connection"
+msgstr "直连模式"
+
+msgid "China IP List Status"
+msgstr "中国IP列表状态"
+
+msgid "Download/Update IP List"
+msgstr "下载/更新IP列表"
+
+msgid "Download Now"
+msgstr "立即下载"
+
+msgid "Advanced Settings"
+msgstr "高级设置"
 
 msgid "DNS Server"
 msgstr "DNS 服务器"
@@ -79,38 +112,59 @@ msgstr "ECH 域名"
 msgid "Domain name for ECH public key query"
 msgstr "用于查询 ECH 公钥的域名"
 
-msgid "Routing Settings"
-msgstr "分流设置"
+msgid "Service Logs"
+msgstr "服务日志"
 
-msgid "Routing Mode"
-msgstr "分流模式"
+msgid "View real-time service logs for troubleshooting and monitoring"
+msgstr "查看实时服务日志以进行故障排除和监控"
 
-msgid "Select traffic routing strategy"
-msgstr "选择流量路由策略"
+msgid "Log Viewer"
+msgstr "日志查看器"
 
-msgid "Global Proxy (all traffic via proxy)"
-msgstr "全局代理（所有流量走代理）"
+msgid "Auto Refresh"
+msgstr "自动刷新"
 
-msgid "Bypass China Mainland (China IPs direct, others via proxy)"
-msgstr "跳过中国大陆（国内IP直连，其他走代理）"
+msgid "Refresh Logs"
+msgstr "刷新日志"
 
-msgid "Direct Connection (no proxy)"
-msgstr "直连模式（不使用代理）"
+msgid "Clear Logs"
+msgstr "清除日志"
 
-msgid "China IP List Management"
-msgstr "中国IP列表管理"
+msgid "Log Lines"
+msgstr "日志行数"
 
-msgid "Required for 'Bypass China Mainland' mode. IP lists will be downloaded automatically on first use."
-msgstr "跳过中国大陆模式所需。IP列表将在首次使用时自动下载。"
+msgid "Are you sure you want to clear all logs?"
+msgstr "确定要清除所有日志吗？"
 
-msgid "IP List Status"
-msgstr "IP列表状态"
+msgid "Logs cleared successfully"
+msgstr "日志已清除"
 
-msgid "Download/Update IP List"
-msgstr "下载/更新 IP列表"
+msgid "Failed to clear logs"
+msgstr "清除日志失败"
 
-msgid "Download Now"
-msgstr "立即下载"
+msgid "Testing Google..."
+msgstr "正在测试 Google..."
+
+msgid "Testing YouTube..."
+msgstr "正在测试 YouTube..."
+
+msgid "Testing OpenAI..."
+msgstr "正在测试 OpenAI..."
+
+msgid "Testing Twitter..."
+msgstr "正在测试 Twitter..."
+
+msgid "Success"
+msgstr "成功"
+
+msgid "Failed"
+msgstr "失败"
+
+msgid "Time"
+msgstr "耗时"
+
+msgid "Test All"
+msgstr "全部测试"
 
 msgid "IPv4 List"
 msgstr "IPv4 列表"
@@ -127,215 +181,14 @@ msgstr "已下载"
 msgid "Last Update"
 msgstr "最后更新"
 
-msgid "entries"
-msgstr "条"
+msgid "Never"
+msgstr "从未"
 
 msgid "Downloading..."
-msgstr "正在下载..."
+msgstr "下载中..."
 
-msgid "Download started. Please wait..."
-msgstr "下载已开始，请稍候..."
+msgid "Download failed"
+msgstr "下载失败"
 
-msgid "Proxy Connection Test"
-msgstr "代理连接测试"
-
-msgid "Test proxy connectivity by accessing foreign websites"
-msgstr "通过访问国外网站测试代理连通性"
-
-msgid "Test Google"
-msgstr "测试 Google"
-
-msgid "Test YouTube"
-msgstr "测试 YouTube"
-
-msgid "Test OpenAI"
-msgstr "测试 OpenAI"
-
-msgid "Test Twitter/X"
-msgstr "测试 Twitter/X"
-
-msgid "Testing..."
-msgstr "测试中..."
-
-msgid "Test All"
-msgstr "全部测试"
-
-msgid "Success"
-msgstr "成功"
-
-msgid "Failed"
-msgstr "失败"
-
-msgid "Timeout"
-msgstr "超时"
-
-msgid "Response Time"
-msgstr "响应时间"
-
-msgid "ms"
-msgstr "毫秒"
-
-msgid "HTTP Status"
-msgstr "HTTP 状态"
-
-msgid "Please enable and start the service before testing"
-msgstr "测试前请先启用并启动服务"
-
-msgid "Service Logs"
-msgstr "服务日志"
-
-msgid "View real-time service logs for troubleshooting and monitoring"
-msgstr "查看实时服务日志以便故障排除和监控"
-
-msgid "Log Viewer"
-msgstr "日志查看器"
-
-msgid "Loading logs..."
-msgstr "加载日志中..."
-
-msgid "Refresh Logs"
-msgstr "刷新日志"
-
-msgid "Auto Refresh: OFF"
-msgstr "自动刷新：关闭"
-
-msgid "Auto Refresh: ON"
-msgstr "自动刷新：开启"
-
-msgid "Clear Logs"
-msgstr "清除日志"
-
-msgid "Clear all logs? This will clear the system log buffer."
-msgstr "清除所有日志？这将清除系统日志缓冲区。"
-
-msgid "Clearing logs..."
-msgstr "正在清除日志..."
-
-msgid "Show last"
-msgstr "显示最后"
-
-msgid "System logs filtered for ech-workers service. Logs are stored in system log buffer."
-msgstr "系统日志已过滤ech-workers服务相关内容。日志存储在系统日志缓冲区中。"
-
-msgid "PID"
-msgstr "进程ID"
-
-msgid "Uptime"
-msgstr "运行时间"
-
-msgid "Memory Usage"
-msgstr "内存占用"
-
-msgid "CPU Usage"
-msgstr "CPU占用"
-
-msgid "Connections"
-msgstr "连接数"
-
-msgid "Traffic"
-msgstr "流量"
-
-msgid "TX"
-msgstr "发送"
-
-msgid "RX"
-msgstr "接收"
-
-msgid "Unknown"
-msgstr "未知"
-
-msgid "Apply"
-msgstr "应用"
-
-msgid "Save & Apply"
-msgstr "保存并应用"
-
-msgid "Save"
-msgstr "保存"
-
-msgid "Reset"
-msgstr "重置"
-
-msgid "Restart Service"
-msgstr "重启服务"
-
-msgid "Stop Service"
-msgstr "停止服务"
-
-msgid "Start Service"
-msgstr "启动服务"
-
-msgid "View Logs"
-msgstr "查看日志"
-
-msgid "Clear Logs"
-msgstr "清除日志"
-
-msgid "Configuration"
-msgstr "配置"
-
-msgid "Status"
-msgstr "状态"
-
-msgid "Logs"
-msgstr "日志"
-
-msgid "About"
-msgstr "关于"
-
-msgid "Version"
-msgstr "版本"
-
-msgid "Author"
-msgstr "作者"
-
-msgid "License"
-msgstr "许可证"
-
-msgid "Project Homepage"
-msgstr "项目主页"
-
-msgid "Report Issues"
-msgstr "问题反馈"
-
-msgid "Documentation"
-msgstr "文档"
-
-msgid "Advanced Settings"
-msgstr "高级设置"
-
-msgid "Debug Mode"
-msgstr "调试模式"
-
-msgid "Enable debug logging"
-msgstr "启用调试日志"
-
-msgid "Connection Timeout"
-msgstr "连接超时"
-
-msgid "Timeout in seconds for connections"
-msgstr "连接超时时间（秒）"
-
-msgid "Max Connections"
-msgstr "最大连接数"
-
-msgid "Maximum number of concurrent connections"
-msgstr "最大并发连接数"
-
-msgid "Buffer Size"
-msgstr "缓冲区大小"
-
-msgid "Buffer size in bytes"
-msgstr "缓冲区大小（字节）"
-
-msgid "Auto Start"
-msgstr "自动启动"
-
-msgid "Start service automatically on boot"
-msgstr "开机自动启动服务"
-
-msgid "Reload on Network Change"
-msgstr "网络变化时重载"
-
-msgid "Automatically reload service when network changes"
-msgstr "网络变化时自动重载服务"
+msgid "Download completed"
+msgstr "下载完成"
