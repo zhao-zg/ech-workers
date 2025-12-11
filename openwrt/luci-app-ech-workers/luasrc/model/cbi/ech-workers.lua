@@ -17,6 +17,15 @@ o = s:option(DummyValue, "_status", translate("Running Status"))
 o.template = "ech-workers/status"
 o.value = translate("Collecting data...")
 
+-- 代理测试
+s = m:section(TypedSection, "ech-workers", translate("Proxy Connection Test"))
+s.anonymous = true
+s.addremove = false
+s.description = translate("Test proxy connectivity by accessing foreign websites")
+
+o = s:option(DummyValue, "_proxy_test", translate("Connection Test"))
+o.template = "ech-workers/proxy_test"
+
 -- 基本设置
 s = m:section(TypedSection, "ech-workers", translate("Basic Settings"))
 s.anonymous = true

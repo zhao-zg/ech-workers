@@ -136,9 +136,6 @@ msgstr "代理连接测试"
 msgid "Test proxy connectivity by accessing foreign websites"
 msgstr "通过访问国外网站测试代理连通性"
 
-msgid "Connection Test"
-msgstr "连接测试"
-
 msgid "Test Google"
 msgstr "测试 Google"
 

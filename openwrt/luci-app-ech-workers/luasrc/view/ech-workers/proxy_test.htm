@@ -1,0 +1,131 @@
+<%+cbi/valueheader%>
+
+<style>
+.test-container {
+	margin: 10px 0;
+}
+.test-button {
+	display: inline-block;
+	margin: 5px;
+	padding: 8px 16px;
+	background-color: #0099cc;
+	color: white;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 14px;
+}
+.test-button:hover {
+	background-color: #0077aa;
+}
+.test-button:disabled {
+	background-color: #cccccc;
+	cursor: not-allowed;
+}
+.test-result {
+	margin: 10px 0;
+	padding: 10px;
+	border-radius: 4px;
+	font-size: 13px;
+}
+.test-result.success {
+	background-color: #d4edda;
+	border: 1px solid #c3e6cb;
+	color: #155724;
+}
+.test-result.failed {
+	background-color: #f8d7da;
+	border: 1px solid #f5c6cb;
+	color: #721c24;
+}
+.test-result.testing {
+	background-color: #fff3cd;
+	border: 1px solid #ffeaa7;
+	color: #856404;
+}
+</style>
+
+<script type="text/javascript">
+var testResults = {};
+
+function testProxy(target, buttonId) {
+	var button = document.getElementById(buttonId);
+	var resultDiv = document.getElementById('test_result_' + target);
+	
+	// 禁用按钮
+	button.disabled = true;
+	
+	// 显示测试中状态
+	resultDiv.className = 'test-result testing';
+	resultDiv.innerHTML = '<%:Testing...%>';
+	
+	XHR.get('<%=luci.dispatcher.build_url("admin", "services", "ech-workers", "test_proxy")%>', 
+		{target: target},
+		function(x, result) {
+			button.disabled = false;
+			
+			if (result.success) {
+				resultDiv.className = 'test-result success';
+				resultDiv.innerHTML = '<strong><%:Success%></strong> - ' + result.target + 
+					'<br><%:Response Time%>: ' + result.response_time + ' <%:ms%>' +
+					'<br><%:HTTP Status%>: ' + result.http_code;
+				testResults[target] = true;
+			} else {
+				resultDiv.className = 'test-result failed';
+				resultDiv.innerHTML = '<strong><%:Failed%></strong> - ' + result.target + 
+					'<br>' + (result.message || result.error || '<%:Timeout%>');
+				testResults[target] = false;
+			}
+		}
+	);
+}
+
+function testAll() {
+	testProxy('google', 'btn_google');
+	setTimeout(function() { testProxy('youtube', 'btn_youtube'); }, 1000);
+	setTimeout(function() { testProxy('openai', 'btn_openai'); }, 2000);
+	setTimeout(function() { testProxy('twitter', 'btn_twitter'); }, 3000);
+}
+</script>
+
+<div class="test-container">
+	<p style="margin-bottom: 10px; color: #666;">
+		<%:Test proxy connectivity by accessing foreign websites%>
+	</p>
+	
+	<div style="margin: 15px 0;">
+		<button id="btn_google" class="test-button" onclick="testProxy('google', 'btn_google')">
+			<%:Test Google%>
+		</button>
+		<button id="btn_youtube" class="test-button" onclick="testProxy('youtube', 'btn_youtube')">
+			<%:Test YouTube%>
+		</button>
+		<button id="btn_openai" class="test-button" onclick="testProxy('openai', 'btn_openai')">
+			<%:Test OpenAI%>
+		</button>
+		<button id="btn_twitter" class="test-button" onclick="testProxy('twitter', 'btn_twitter')">
+			<%:Test Twitter/X%>
+		</button>
+	</div>
+	
+	<div style="margin: 15px 0;">
+		<button class="test-button" onclick="testAll()" style="background-color: #28a745;">
+			<%:Test All%>
+		</button>
+	</div>
+	
+	<div id="test_result_google" class="test-result" style="display:none;"></div>
+	<div id="test_result_youtube" class="test-result" style="display:none;"></div>
+	<div id="test_result_openai" class="test-result" style="display:none;"></div>
+	<div id="test_result_twitter" class="test-result" style="display:none;"></div>
+</div>
+
+<script type="text/javascript">
+// 显示结果区域
+document.getElementById('test_result_google').style.display = 'block';
+document.getElementById('test_result_youtube').style.display = 'block';
+document.getElementById('test_result_openai').style.display = 'block';
+document.getElementById('test_result_twitter').style.display = 'block';
+</script>
+
+<%+cbi/valuefooter%>

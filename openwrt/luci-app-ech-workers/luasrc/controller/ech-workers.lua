@@ -14,6 +14,7 @@ function index()
 	
 	entry({"admin", "services", "ech-workers", "status"}, call("action_status"))
 	entry({"admin", "services", "ech-workers", "download_iplist"}, call("action_download_iplist"))
+	entry({"admin", "services", "ech-workers", "test_proxy"}, call("action_test_proxy"))
 end
 
 function action_status()
@@ -81,5 +82,69 @@ function action_download_iplist()
 	}
 	
 	luci.http.prepare_content("application/json")
+	luci.http.write_json(response)
+end
+
+function action_test_proxy()
+	local sys = require "luci.sys"
+	local json = require "luci.jsonc"
+	
+	-- 获取测试目标
+	luci.http.prepare_content("application/json")
+	
+	local target = luci.http.formvalue("target") or "google"
+	local proxy_addr = luci.http.formvalue("proxy") or "127.0.0.1:1080"
+	
+	-- 检查服务是否运行
+	if sys.call("pgrep -f /usr/bin/ech-workers >/dev/null") ~= 0 then
+		luci.http.write_json({
+			success = false,
+			message = "Service not running",
+			error = "Please start the service before testing"
+		})
+		return
+	end
+	
+	-- 测试目标映射
+	local test_targets = {
+		google = {url = "https://www.google.com", name = "Google"},
+		youtube = {url = "https://www.youtube.com", name = "YouTube"},
+		openai = {url = "https://chat.openai.com", name = "OpenAI"},
+		twitter = {url = "https://twitter.com", name = "Twitter/X"}
+	}
+	
+	local test_info = test_targets[target] or test_targets["google"]
+	
+	-- 使用curl通过SOCKS5代理测试
+	local start_time = os.clock()
+	local cmd = string.format(
+		"curl -x socks5h://%s -m 10 -s -o /dev/null -w '%%{http_code}|%%{time_total}' '%s' 2>&1",
+		proxy_addr,
+		test_info.url
+	)
+	
+	local result = sys.exec(cmd)
+	local elapsed = (os.clock() - start_time) * 1000
+	
+	-- 解析结果
+	local http_code, time_total = result:match("(%d+)|([%d%.]+)")
+	
+	local response = {
+		target = test_info.name,
+		url = test_info.url
+	}
+	
+	if http_code and tonumber(http_code) then
+		local code = tonumber(http_code)
+		response.success = (code >= 200 and code < 400)
+		response.http_code = code
+		response.response_time = math.floor(tonumber(time_total) * 1000)
+		response.message = response.success and "Connection successful" or "Connection failed"
+	else
+		response.success = false
+		response.message = "Connection timeout or error"
+		response.error = result
+	end
+	
 	luci.http.write_json(response)
 end

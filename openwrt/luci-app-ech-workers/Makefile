@@ -17,7 +17,7 @@ define Package/luci-app-ech-workers
   CATEGORY:=LuCI
   SUBMENU:=3. Applications
   TITLE:=LuCI support for ECH-Workers
-  DEPENDS:=+ech-workers +luci-base
+  DEPENDS:=+ech-workers
   PKGARCH:=all
 endef
 
