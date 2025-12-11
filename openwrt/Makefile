@@ -4,7 +4,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ech-workers
-PKG_VERSION:=$(shell git -C "$(CURDIR)/.." describe --tags --always 2>/dev/null | sed 's/^v//' || echo "1.0.0")
+# 优先使用环境变量中的版本，否则使用git tag，最后使用默认值
+PKG_VERSION:=$(if $(PKG_VERSION_OVERRIDE),$(PKG_VERSION_OVERRIDE),$(shell git describe --tags --always 2>/dev/null | sed 's/^v//' || echo "1.0.12"))
 PKG_RELEASE:=
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)

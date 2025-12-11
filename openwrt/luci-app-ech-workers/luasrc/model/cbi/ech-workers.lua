@@ -4,125 +4,117 @@ local m, s, o
 local sys = require "luci.sys"
 local uci = require "luci.model.uci".cursor()
 
-m = Map("ech-workers", translate("ECH-Workers"), 
-	translate("ECH-enabled transparent proxy with intelligent routing. " ..
-	"Supports Encrypted Client Hello (ECH) and automatic China mainland bypass. " ..
-	"Traffic is automatically intercepted via iptables + redsocks."))
+-- 主表单
+m = Map("ech-workers", translate("ECH-Workers"))
+m.description = translate("ECH-enabled SOCKS5/HTTP proxy with intelligent routing. Supports Encrypted Client Hello (ECH) and automatic China mainland bypass.")
 
--- 状态区域
-s = m:section(TypedSection, "ech-workers", translate("Service Status"))
+-- ==================== 运行状态 ====================
+s = m:section(TypedSection, "ech-workers", translate("Running Status"))
 s.anonymous = true
 s.addremove = false
 
-o = s:option(DummyValue, "_status", translate("Running Status"))
+o = s:option(DummyValue, "_status", translate("Service Status"))
 o.template = "ech-workers/status"
 o.value = translate("Collecting data...")
 
-o = s:option(DummyValue, "_transparent_note", translate("Transparent Proxy Mode"))
-o.rawhtml = true
-o.value = translate("<strong>All TCP traffic from LAN clients will be automatically proxied when enabled.</strong><br/>" ..
-	"No manual proxy settings needed on client devices.")
-
--- 代理测试（未启用时也可用）
 o = s:option(DummyValue, "_proxy_test", translate("Connection Test"))
 o.template = "ech-workers/proxy_test"
-o.description = translate("Test proxy connectivity by accessing foreign websites")
 
--- 服务器配置
-s = m:section(TypedSection, "ech-workers", translate("Server Configuration"))
+-- ==================== 基本设置 ====================
+s = m:section(TypedSection, "ech-workers", translate("Basic Settings"))
 s.anonymous = true
 s.addremove = false
 
-o = s:option(Flag, "enabled", translate("Enable Service"))
+o = s:option(Flag, "enabled", translate("Enable"))
+o.default = "0"
 o.rmempty = false
 
-o = s:option(Value, "server_addr", translate("Server Address"),
-	translate("Cloudflare Workers server address (format: domain:port/path). Default port is 443 if not specified."))
+o = s:option(Value, "server_addr", translate("Server Address"))
+o.description = translate("Cloudflare Workers address (e.g., your-worker.workers.dev:443)")
 o.placeholder = "your-worker.workers.dev:443"
 o.rmempty = false
 
-o = s:option(Value, "listen_addr", translate("Listen Address"),
-	translate("Local proxy listen address and port (e.g., 0.0.0.0:20001)"))
-o.default = "0.0.0.0:20001"
-o.placeholder = "0.0.0.0:20001"
-o.rmempty = false
-
-o = s:option(Value, "server_ip", translate("Preferred IP"),
-	translate("Optional: Specify the server IP or domain name to bypass DNS resolution"))
-o.default = "mfa.gov.ua"
-o.placeholder = "mfa.gov.ua"
-
-o = s:option(Value, "fallback_hosts", translate("Fallback Hosts"),
-	translate("Optional: Specify fallback host for Workers to connect to target servers (IP or domain)"))
-o.placeholder = "example.com"
-
-o = s:option(Value, "token", translate("Authentication Token"),
-	translate("Optional: Token for server authentication"))
+o = s:option(Value, "token", translate("Auth Token"))
+o.description = translate("Authentication token (optional)")
 o.password = true
+o.placeholder = translate("Leave blank if not required")
 
--- 路由配置
-s = m:section(TypedSection, "ech-workers", translate("Routing Configuration"))
-s.anonymous = true
-s.addremove = false
-
-o = s:option(ListValue, "routing_mode", translate("Routing Mode"),
-	translate("Select traffic routing strategy"))
+o = s:option(ListValue, "routing_mode", translate("Routing Mode"))
+o.description = translate("Traffic routing strategy")
+o:value("bypass_cn", translate("Bypass China Mainland (Recommended)"))
 o:value("global", translate("Global Proxy"))
-o:value("bypass_cn", translate("Bypass China Mainland"))
 o:value("none", translate("Direct Connection"))
-o.default = "global"
+o.default = "bypass_cn"
 o.rmempty = false
 
--- IP 列表管理（仅在bypass_cn模式下显示）
-o = s:option(DummyValue, "_iplist_status", translate("China IP List Status"))
-o.template = "ech-workers/iplist_status"
-
-o = s:option(Button, "_download", translate("Download/Update IP List"))
-o.inputtitle = translate("Download Now")
-o.inputstyle = "apply"
-o.template = "ech-workers/download_button"
-
--- 高级设置（折叠）
+-- ==================== 高级设置 ====================
 s = m:section(TypedSection, "ech-workers", translate("Advanced Settings"))
 s.anonymous = true
 s.addremove = false
 
-o = s:option(Value, "dns_server", translate("DNS Server"),
-	translate("DNS over HTTPS (DoH) server for ECH key query"))
+o = s:option(Value, "listen_addr", translate("Listen Address"))
+o.description = translate("Local proxy listen address")
+o.default = "0.0.0.0:20001"
+o.datatype = "ipaddr"
+
+o = s:option(Value, "server_ip", translate("Server IP"))
+o.description = translate("Preferred IP address or domain to bypass DNS")
+o.default = "mfa.gov.ua"
+o.placeholder = "mfa.gov.ua"
+
+o = s:option(Value, "fallback_hosts", translate("Fallback Hosts"))
+o.description = translate("Fallback target for Workers reverse proxy (IP or domain)")
+o.placeholder = "example.com"
+
+o = s:option(Value, "dns_server", translate("DoH Server"))
+o.description = translate("DNS over HTTPS server for ECH key query")
 o.default = "dns.alidns.com/dns-query"
 o.placeholder = "dns.alidns.com/dns-query"
 
-o = s:option(Value, "ech_domain", translate("ECH Domain"),
-	translate("Domain name for ECH public key query"))
+o = s:option(Value, "ech_domain", translate("ECH Domain"))
+o.description = translate("Domain for ECH public key lookup")
 o.default = "cloudflare-ech.com"
 o.placeholder = "cloudflare-ech.com"
 
--- 版本信息
-s = m:section(TypedSection, "ech-workers", translate("Version Information"))
+-- ==================== IP 列表管理 ====================
+s = m:section(TypedSection, "ech-workers", translate("China IP List"))
+s.anonymous = true
+s.addremove = false
+s.description = translate("Required for 'Bypass China Mainland' mode")
+
+o = s:option(DummyValue, "_iplist_status", translate("List Status"))
+o.template = "ech-workers/iplist_status"
+
+o = s:option(Button, "_download", translate("Update List"))
+o.inputtitle = translate("Download Now")
+o.inputstyle = "apply"
+o.template = "ech-workers/download_button"
+
+-- ==================== 版本与更新 ====================
+s = m:section(TypedSection, "ech-workers", translate("About"))
 s.anonymous = true
 s.addremove = false
 
-o = s:option(DummyValue, "_version", translate("Current Version"))
+o = s:option(DummyValue, "_version", translate("Version"))
 o.rawhtml = true
 function o.cfgvalue(self, section)
 	local version = sys.exec("ech-workers -version 2>/dev/null | grep -oP 'v[0-9]+\\.[0-9]+\\.[0-9]+' || echo 'Unknown'")
-	return string.format('<strong>%s</strong>', version:gsub("\n", ""))
+	return string.format('<span style="color:#090;font-weight:bold">%s</span>', version:gsub("\n", ""))
 end
 
-o = s:option(Button, "_check_update", translate("Check for Updates"))
+o = s:option(Button, "_check_update", translate("Check Update"))
 o.inputtitle = translate("Check Now")
-o.inputstyle = "apply"
+o.inputstyle = "reload"
 o.write = function()
 	luci.http.redirect(luci.dispatcher.build_url("admin", "services", "ech-workers", "check_update"))
 end
 
--- 日志查看
-s = m:section(TypedSection, "ech-workers", translate("Service Logs"))
+-- ==================== 日志查看 ====================
+s = m:section(TypedSection, "ech-workers", translate("Logs"))
 s.anonymous = true
 s.addremove = false
-s.description = translate("View real-time service logs for troubleshooting and monitoring")
 
-o = s:option(DummyValue, "_logs", translate("Log Viewer"))
+o = s:option(DummyValue, "_logs", translate("Service Log"))
 o.template = "ech-workers/logs"
 
 return m

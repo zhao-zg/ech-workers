@@ -5,22 +5,13 @@ msgid "ECH-Workers"
 msgstr "ECH-Workers"
 
 msgid "ECH-enabled SOCKS5/HTTP proxy with intelligent routing. Supports Encrypted Client Hello (ECH) and automatic China mainland bypass."
-msgstr "支持 ECH 的 SOCKS5/HTTP 代理，具有智能分流功能。支持加密客户端 Hello (ECH) 和自动跳过中国大陆。"
-
-msgid "ECH-enabled transparent proxy with intelligent routing. Supports Encrypted Client Hello (ECH) and automatic China mainland bypass. Traffic is automatically intercepted via iptables + redsocks."
-msgstr "支持 ECH 的透明代理，具有智能分流功能。支持加密客户端 Hello (ECH) 和自动跳过中国大陆。流量通过 iptables + redsocks 自动拦截。"
-
-msgid "Service Status"
-msgstr "服务状态"
-
-msgid "Transparent Proxy Mode"
-msgstr "透明代理模式"
-
-msgid "<strong>All TCP traffic from LAN clients will be automatically proxied when enabled.</strong><br/>No manual proxy settings needed on client devices."
-msgstr "<strong>启用后，来自局域网客户端的所有TCP流量将自动被代理。</strong><br/>客户端设备无需手动配置代理。"
+msgstr "支持 ECH 的智能代理，具备中国大陆智能分流功能"
 
 msgid "Running Status"
 msgstr "运行状态"
+
+msgid "Service Status"
+msgstr "服务状态"
 
 msgid "Collecting data..."
 msgstr "正在收集数据..."
@@ -40,170 +31,107 @@ msgstr "检查中..."
 msgid "Connection Test"
 msgstr "连接测试"
 
-msgid "Test proxy connectivity by accessing foreign websites"
-msgstr "测试代理连接是否正常（未启用时也可测试）"
+msgid "Basic Settings"
+msgstr "基本设置"
 
-msgid "Server Configuration"
-msgstr "服务器配置"
-
-msgid "Enable Service"
-msgstr "启用服务"
+msgid "Enable"
+msgstr "启用"
 
 msgid "Server Address"
 msgstr "服务器地址"
 
-msgid "Cloudflare Workers server address (format: domain:port/path)"
-msgstr "Cloudflare Workers 服务器地址（格式：域名:端口/路径）"
+msgid "Cloudflare Workers address (e.g., your-worker.workers.dev:443)"
+msgstr "Cloudflare Workers 地址（如：your-worker.workers.dev:443）"
 
-msgid "Cloudflare Workers server address (format: domain:port/path). Default port is 443 if not specified."
-msgstr "Cloudflare Workers 服务器地址（格式：域名:端口/路径）。未指定端口时默认为443。"
+msgid "Auth Token"
+msgstr "认证令牌"
 
-msgid "Listen Address"
-msgstr "监听地址"
+msgid "Authentication token (optional)"
+msgstr "认证令牌（可选）"
 
-msgid "Local proxy listen address and port (e.g., 0.0.0.0:20001)"
-msgstr "本地代理监听地址和端口（例如：0.0.0.0:20001）"
-
-msgid "Preferred IP"
-msgstr "优选IP"
-
-msgid "Optional: Specify the server IP or domain name to bypass DNS resolution"
-msgstr "可选：指定服务器IP或域名以绕过DNS解析"
-
-msgid "Fallback Hosts"
-msgstr "反代Host"
-
-msgid "Optional: Specify fallback host for Workers to connect to target servers (IP or domain)"
-msgstr "可选：指定Workers连接目标服务器的反代Host（IP或域名）"
-
-msgid "Authentication Token"
-msgstr "身份令牌"
-
-msgid "Optional: Token for server authentication"
-msgstr "可选：用于服务器身份验证的令牌"
-
-msgid "Routing Configuration"
-msgstr "路由配置"
+msgid "Leave blank if not required"
+msgstr "不需要可留空"
 
 msgid "Routing Mode"
 msgstr "路由模式"
 
-msgid "Select traffic routing strategy"
-msgstr "选择流量路由策略"
+msgid "Traffic routing strategy"
+msgstr "流量路由策略"
+
+msgid "Bypass China Mainland (Recommended)"
+msgstr "绕过中国大陆（推荐）"
 
 msgid "Global Proxy"
 msgstr "全局代理"
 
 msgid "Bypass China Mainland"
-msgstr "跳过中国大陆"
+msgstr "绕过中国大陆"
 
 msgid "Direct Connection"
 msgstr "直连模式"
 
-msgid "China IP List Status"
-msgstr "中国IP列表状态"
-
-msgid "Download/Update IP List"
-msgstr "下载/更新IP列表"
-
-msgid "Download Now"
-msgstr "立即下载"
-
 msgid "Advanced Settings"
 msgstr "高级设置"
 
-msgid "DNS Server"
-msgstr "DNS 服务器"
+msgid "Listen Address"
+msgstr "监听地址"
 
-msgid "DNS over HTTPS (DoH) server for ECH key query"
-msgstr "用于查询 ECH 密钥的 DNS over HTTPS (DoH) 服务器"
+msgid "Local proxy listen address"
+msgstr "本地代理监听地址"
+
+msgid "Server IP"
+msgstr "服务器IP"
+
+msgid "Preferred IP address or domain to bypass DNS"
+msgstr "优选IP或域名以绕过DNS"
+
+msgid "Fallback Hosts"
+msgstr "回源主机"
+
+msgid "Fallback target for Workers reverse proxy (IP or domain)"
+msgstr "Workers 反向代理回源目标（IP或域名）"
+
+msgid "DoH Server"
+msgstr "DoH 服务器"
+
+msgid "DNS over HTTPS server for ECH key query"
+msgstr "用于 ECH 密钥查询的 DNS over HTTPS 服务器"
 
 msgid "ECH Domain"
 msgstr "ECH 域名"
 
-msgid "Domain name for ECH public key query"
-msgstr "用于查询 ECH 公钥的域名"
+msgid "Domain for ECH public key lookup"
+msgstr "ECH 公钥查询域名"
 
-msgid "Service Logs"
+msgid "China IP List"
+msgstr "中国大陆 IP 列表"
+
+msgid "Required for 'Bypass China Mainland' mode"
+msgstr "「绕过中国大陆」模式需要"
+
+msgid "List Status"
+msgstr "列表状态"
+
+msgid "Update List"
+msgstr "更新列表"
+
+msgid "Download Now"
+msgstr "立即下载"
+
+msgid "About"
+msgstr "关于"
+
+msgid "Version"
+msgstr "版本"
+
+msgid "Check Update"
+msgstr "检查更新"
+
+msgid "Check Now"
+msgstr "立即检查"
+
+msgid "Logs"
+msgstr "日志"
+
+msgid "Service Log"
 msgstr "服务日志"
-
-msgid "View real-time service logs for troubleshooting and monitoring"
-msgstr "查看实时服务日志以进行故障排除和监控"
-
-msgid "Log Viewer"
-msgstr "日志查看器"
-
-msgid "Auto Refresh"
-msgstr "自动刷新"
-
-msgid "Refresh Logs"
-msgstr "刷新日志"
-
-msgid "Clear Logs"
-msgstr "清除日志"
-
-msgid "Log Lines"
-msgstr "日志行数"
-
-msgid "Are you sure you want to clear all logs?"
-msgstr "确定要清除所有日志吗？"
-
-msgid "Logs cleared successfully"
-msgstr "日志已清除"
-
-msgid "Failed to clear logs"
-msgstr "清除日志失败"
-
-msgid "Testing Google..."
-msgstr "正在测试 Google..."
-
-msgid "Testing YouTube..."
-msgstr "正在测试 YouTube..."
-
-msgid "Testing OpenAI..."
-msgstr "正在测试 OpenAI..."
-
-msgid "Testing Twitter..."
-msgstr "正在测试 Twitter..."
-
-msgid "Success"
-msgstr "成功"
-
-msgid "Failed"
-msgstr "失败"
-
-msgid "Time"
-msgstr "耗时"
-
-msgid "Test All"
-msgstr "全部测试"
-
-msgid "IPv4 List"
-msgstr "IPv4 列表"
-
-msgid "IPv6 List"
-msgstr "IPv6 列表"
-
-msgid "Not Downloaded"
-msgstr "未下载"
-
-msgid "Downloaded"
-msgstr "已下载"
-
-msgid "Last Update"
-msgstr "最后更新"
-
-msgid "Never"
-msgstr "从未"
-
-msgid "Downloading..."
-msgstr "下载中..."
-
-msgid "Latency"
-msgstr "延迟"
-
-msgid "Download failed"
-msgstr "下载失败"
-
-msgid "Download completed"
-msgstr "下载完成"

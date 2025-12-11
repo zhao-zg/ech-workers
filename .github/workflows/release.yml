@@ -180,6 +180,11 @@ jobs:
     
     - name: Build OpenWrt packages
       run: |
+        # 设置版本环境变量
+        VERSION="${{ github.ref_name }}"
+        VERSION_NUM="${VERSION#v}"
+        echo "Building with version: $VERSION_NUM"
+        
         cd openwrt-sdk
         # Copy package directories directly to SDK
         mkdir -p package/ech-workers
@@ -188,9 +193,9 @@ jobs:
         cp -r ../openwrt/luci-app-ech-workers/* package/luci-app-ech-workers/
         # Use defconfig instead of menuconfig
         make defconfig
-        # Build packages
-        make package/ech-workers/compile V=s
-        make package/luci-app-ech-workers/compile V=s
+        # Build packages with version override
+        make package/ech-workers/compile V=s PKG_VERSION_OVERRIDE="$VERSION_NUM"
+        make package/luci-app-ech-workers/compile V=s PKG_VERSION_OVERRIDE="$VERSION_NUM"
     
     - name: Find and copy packages
       run: |
