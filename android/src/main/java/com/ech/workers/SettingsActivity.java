@@ -29,6 +29,7 @@ public class SettingsActivity extends Activity {
     private LinearLayout itemEchDomain;
     private LinearLayout itemToken;
     private LinearLayout itemRoutingMode;
+    private LinearLayout itemFallbackHosts;
     
     // 配置值显示
     private TextView valueServerAddr;
@@ -37,6 +38,7 @@ public class SettingsActivity extends Activity {
     private TextView valueEchDomain;
     private TextView valueToken;
     private TextView valueRoutingMode;
+    private TextView valueFallbackHosts;
     
     private ArrayList<String> profiles;
     private String currentProfile;
@@ -70,7 +72,9 @@ public class SettingsActivity extends Activity {
         valueEchDomain = findViewById(R.id.value_ech_domain);
         valueToken = findViewById(R.id.value_token);
         valueRoutingMode = findViewById(R.id.value_routing_mode);
-        valueFallbackHosts = findViewById(R.id.value_fallback_hosts);        Button btnBack = findViewById(R.id.btn_back);
+        valueFallbackHosts = findViewById(R.id.value_fallback_hosts);
+        
+        Button btnBack = findViewById(R.id.btn_back);
         Button btnSave = findViewById(R.id.btn_save);
         
         btnBack.setOnClickListener(v -> finish());

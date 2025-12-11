@@ -1,4 +1,4 @@
-# 发布新版本的脚本
+﻿# 发布新版本的脚本
 param(
     [Parameter(Mandatory=$true)]
     [string]$Version,

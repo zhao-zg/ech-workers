@@ -51,9 +51,11 @@
         <string name="toast_profile_exists">节点名称已存在</string>
         <string name="toast_name_empty">节点名称不能为空</string>
         <string name="toast_saved">保存成功</string>
+        <string name="save_success">保存成功</string>
         <string name="toast_cannot_delete_last">不能删除最后一个节点</string>
         <string name="ok">确定</string>
         <string name="cancel">取消</string>
+        <string name="direct">直连</string>
         
         <!-- New UI Strings -->
         <string name="settings">配置</string>
