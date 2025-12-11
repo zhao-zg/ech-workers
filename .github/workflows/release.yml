@@ -95,7 +95,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [x86_64, aarch64_generic, mipsel_24kc]
+        arch: [x86_64, aarch64_generic]
     
     steps:
     - name: Checkout code
@@ -124,9 +124,6 @@ jobs:
             aarch64_generic)
               SDK_URL="https://downloads.openwrt.org/releases/23.05.5/targets/armsr/armv8/openwrt-sdk-23.05.5-armsr-armv8_gcc-12.3.0_musl.Linux-x86_64.tar.xz"
               ;;
-            mipsel_24kc)
-              SDK_URL="https://downloads.openwrt.org/releases/23.05.5/targets/ramips/mt7621/openwrt-sdk-23.05.5-ramips-mt7621_gcc-12.3.0_musl.Linux-x86_64.tar.xz"
-              ;;
           esac
           wget -q "$SDK_URL" -O sdk.tar.xz
           mkdir -p openwrt-sdk
@@ -152,9 +149,6 @@ jobs:
             ;;
           aarch64_generic)
             GOARCH=arm64 CGO_ENABLED=0 go build -o ../../openwrt/ech-workers -ldflags="-s -w -X github.com/zhao-zg/ech-workers/tunnel.Version=$VERSION" .
-            ;;
-          mipsel_24kc)
-            GOARCH=mipsle GOMIPS=softfloat CGO_ENABLED=0 go build -o ../../openwrt/ech-workers -ldflags="-s -w -X github.com/zhao-zg/ech-workers/tunnel.Version=$VERSION" .
             ;;
         esac
     
@@ -241,7 +235,6 @@ jobs:
           **OpenWrt 软件包:**
           - `ech-workers_*_x86_64.ipk` - x86_64 架构
           - `ech-workers_*_aarch64.ipk` - ARM64 架构
-          - `ech-workers_*_mipsel_24kc.ipk` - MIPS 架构
           - `luci-app-ech-workers_*.ipk` - LuCI Web 界面（所有架构通用）
           
           ### 安装方法
