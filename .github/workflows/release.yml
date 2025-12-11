@@ -80,7 +80,10 @@ jobs:
     
     - name: Build APK (Debug)
       working-directory: ./android
+      env:
+        GITHUB_REF_NAME: ${{ github.ref_name }}
       run: |
+        echo "Building with version: $GITHUB_REF_NAME"
         chmod +x gradlew
         ./gradlew clean
         ./gradlew assembleDebug --stacktrace
