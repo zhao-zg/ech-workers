@@ -5,28 +5,212 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
-  create-release:
+  build-android:
     runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+        cache: false
+    
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/go/pkg/mod
+          ~/.cache/go-build
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+    
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+    
+    - name: Install NDK
+      run: |
+        sdkmanager --install "ndk;26.3.11579264"
+        echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.3.11579264" >> $GITHUB_ENV
+    
+    - name: Install gomobile
+      run: |
+        go install golang.org/x/mobile/cmd/gomobile@latest
+        go install golang.org/x/mobile/cmd/gobind@latest
+        gomobile init
+    
+    - name: Prepare Go module
+      run: |
+        go work init
+        go work use . ./tunnel ./mobile
+        cd mobile
+        go mod tidy
+    
+    - name: Build Go library
+      run: |
+        export PATH=$PATH:$(go env GOPATH)/bin
+        cd mobile
+        echo "Building AAR with gomobile..."
+        gomobile bind -v -target=android -androidapi=24 -o ../android/ech-workers.aar .
+        echo "gomobile bind completed successfully"
+        cd ..
+        ls -lh android/ech-workers.aar
+    
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: 8.5
+    
+    - name: Build APK
+      working-directory: ./android
+      run: |
+        chmod +x gradlew
+        ./gradlew clean
+        gradle assembleRelease --stacktrace
+    
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-apk
+        path: android/build/outputs/apk/release/*.apk
+
+  build-openwrt:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [x86_64, aarch64_generic, mipsel_24kc]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+    
+    - name: Cache OpenWrt SDK
+      uses: actions/cache@v4
+      with:
+        path: openwrt-sdk
+        key: openwrt-sdk-23.05.5-${{ matrix.arch }}
+    
+    - name: Download and extract OpenWrt SDK
+      run: |
+        if [ ! -d "openwrt-sdk" ]; then
+          case "${{ matrix.arch }}" in
+            x86_64)
+              SDK_URL="https://downloads.openwrt.org/releases/23.05.5/targets/x86/64/openwrt-sdk-23.05.5-x86-64_gcc-12.3.0_musl.Linux-x86_64.tar.xz"
+              ;;
+            aarch64_generic)
+              SDK_URL="https://downloads.openwrt.org/releases/23.05.5/targets/armsr/armv8/openwrt-sdk-23.05.5-armsr-armv8_gcc-12.3.0_musl.Linux-x86_64.tar.xz"
+              ;;
+            mipsel_24kc)
+              SDK_URL="https://downloads.openwrt.org/releases/23.05.5/targets/ramips/mt7621/openwrt-sdk-23.05.5-ramips-mt7621_gcc-12.3.0_musl.Linux-x86_64.tar.xz"
+              ;;
+          esac
+          wget -q "$SDK_URL" -O sdk.tar.xz
+          mkdir -p openwrt-sdk
+          tar -xf sdk.tar.xz --strip-components=1 -C openwrt-sdk
+          rm sdk.tar.xz
+        fi
+    
+    - name: Prepare Go workspace
+      run: |
+        go work init
+        go work use . ./tunnel
+    
+    - name: Build Go binary
+      run: |
+        cd cmd/ech-workers
+        case "${{ matrix.arch }}" in
+          x86_64)
+            GOARCH=amd64 CGO_ENABLED=0 go build -o ../../openwrt/ech-workers -ldflags="-s -w" .
+            ;;
+          aarch64_generic)
+            GOARCH=arm64 CGO_ENABLED=0 go build -o ../../openwrt/ech-workers -ldflags="-s -w" .
+            ;;
+          mipsel_24kc)
+            GOARCH=mipsle GOMIPS=softfloat CGO_ENABLED=0 go build -o ../../openwrt/ech-workers -ldflags="-s -w" .
+            ;;
+        esac
+    
+    - name: Build OpenWrt packages
+      run: |
+        cd openwrt-sdk
+        echo "src-link custom $(pwd)/../openwrt" >> feeds.conf.default
+        ./scripts/feeds update custom
+        ./scripts/feeds install -a -p custom
+        make package/ech-workers/compile V=s
+        make package/luci-app-ech-workers/compile V=s
+    
+    - name: Find and copy packages
+      run: |
+        mkdir -p artifacts
+        find openwrt-sdk/bin -name "ech-workers_*.ipk" -exec cp {} artifacts/ \;
+        find openwrt-sdk/bin -name "luci-app-ech-workers_*.ipk" -exec cp {} artifacts/ \;
+        ls -lh artifacts/
+    
+    - name: Upload OpenWrt packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: openwrt-${{ matrix.arch }}
+        path: artifacts/*.ipk
+
+  create-release:
+    needs: [build-android, build-openwrt]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download Android artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: android-apk
+        path: artifacts/android
+    
+    - name: Download OpenWrt artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: openwrt-*
+        path: artifacts/openwrt
+        merge-multiple: true
+    
+    - name: List all artifacts
+      run: |
+        echo "Android APKs:"
+        ls -lh artifacts/android/
+        echo "OpenWrt IPKs:"
+        ls -lh artifacts/openwrt/
     
     - name: Extract version
       id: version
       run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
     
     - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ steps.version.outputs.VERSION }}
+        name: Release ${{ steps.version.outputs.VERSION }}
         body: |
           ## ECH-Workers ${{ steps.version.outputs.VERSION }}
           
@@ -40,8 +224,7 @@ jobs:
           ### 下载说明
           
           **Android 客户端:**
-          - `ech-workers-signed.apk` - 已签名版本（推荐）
-          - `ech-workers-unsigned.apk` - 未签名版本
+          - APK 文件支持 armeabi-v7a, arm64-v8a, x86, x86_64 架构
           
           **OpenWrt 软件包:**
           - `ech-workers_*_x86_64.ipk` - x86_64 架构
@@ -54,7 +237,7 @@ jobs:
           **Android:**
           ```bash
           # 下载 APK 文件后直接安装
-          adb install ech-workers-signed.apk
+          adb install ech-workers-*.apk
           ```
           
           **OpenWrt:**
@@ -72,18 +255,10 @@ jobs:
           ### 配置说明
           
           详细配置说明请参考项目 README.md
-          
-          ### 更新日志
-          
-          - 初始发布版本
         draft: false
         prerelease: false
-
-  build-android:
-    needs: create-release
-    uses: ./.github/workflows/build-android.yml
-    secrets: inherit
-
-  build-openwrt:
-    needs: create-release
-    uses: ./.github/workflows/build-openwrt.yml
+        files: |
+          artifacts/android/*.apk
+          artifacts/openwrt/*.ipk
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
