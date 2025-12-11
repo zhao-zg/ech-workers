@@ -3,6 +3,9 @@ package com.ech.workers;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.VpnService;
 import android.os.Bundle;
 import android.os.Handler;
@@ -212,11 +215,11 @@ public class MainActivity extends Activity {
 
     private void checkServiceStatus() {
         // 检查 VPN 服务是否真的在运行
-        android.net.ConnectivityManager cm = (android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-        android.net.Network activeNetwork = cm.getActiveNetwork();
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        Network activeNetwork = cm.getActiveNetwork();
         if (activeNetwork != null) {
-            android.net.NetworkCapabilities caps = cm.getNetworkCapabilities(activeNetwork);
-            if (caps != null && caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN)) {
+            NetworkCapabilities caps = cm.getNetworkCapabilities(activeNetwork);
+            if (caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
                 isRunning = true;
                 return;
             }

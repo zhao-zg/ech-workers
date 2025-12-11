@@ -3,8 +3,6 @@ package com.ech.workers;
 import android.os.AsyncTask;
 import android.util.Log;
 
-import com.ech.workers.BuildConfig;
-
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
