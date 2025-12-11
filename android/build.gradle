@@ -53,7 +53,7 @@ signingConfigs {
                 }
                 debug {
                         minifyEnabled false
-                        signingConfig signingConfigs.release
+                        // Debug builds use default debug signing
                 }
         }
 
