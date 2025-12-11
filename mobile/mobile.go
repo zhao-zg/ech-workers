@@ -19,9 +19,9 @@ func NewProxy() *Proxy {
 // Start starts the SOCKS proxy
 // Returns empty string on success, error message on failure
 // ip: 优选IP，用于客户端连接Workers
-// proxyIP: 反代IP，传递给Workers用于连接真实目标
-func (p *Proxy) Start(host, wsServer, dns, ech, ip, proxyIP, token string) string {
-	err := tunnel.StartSocksProxy(host, wsServer, dns, ech, ip, proxyIP, token)
+// fallbackHosts: 反代Host，传递给Workers用于连接真实目标（支持域名和IP）
+func (p *Proxy) Start(host, wsServer, dns, ech, ip, fallbackHosts, token string) string {
+	err := tunnel.StartSocksProxy(host, wsServer, dns, ech, ip, fallbackHosts, token)
 	if err != nil {
 		return err.Error()
 	}
@@ -66,9 +66,9 @@ func (p *Proxy) IsRunning() bool {
 // StartSocksProxy starts the SOCKS proxy (static version)
 // Returns empty string on success, error message on failure
 // ip: 优选IP，用于客户端连接Workers
-// proxyIP: 反代IP，传递给Workers用于连接真实目标
-func StartSocksProxy(host, wsServer, dns, ech, ip, proxyIP, token string) string {
-	err := tunnel.StartSocksProxy(host, wsServer, dns, ech, ip, proxyIP, token)
+// fallbackHosts: 反代Host，传递给Workers用于连接真实目标（支持域名和IP）
+func StartSocksProxy(host, wsServer, dns, ech, ip, fallbackHosts, token string) string {
+	err := tunnel.StartSocksProxy(host, wsServer, dns, ech, ip, fallbackHosts, token)
 	if err != nil {
 		return err.Error()
 	}

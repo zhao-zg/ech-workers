@@ -222,7 +222,7 @@ public class TProxyService extends VpnService {
                                 prefs.getEchDns(),
                                 prefs.getEchDomain(),
                                 prefs.getPrefIp(),
-                                "", // proxyIP 暂时为空，后续可添加UI配置
+                                "", // fallbackHosts 暂时为空，后续可添加UI配置
                                 prefs.getToken()
                         );
                 } catch (Exception e) {

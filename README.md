@@ -128,16 +128,16 @@ opkg install luci-app-ech-workers_*.ipk
 |--------|------|------|
 | 服务器地址 | Cloudflare Worker 地址 | `your-worker.workers.dev:443` |
 | 优选IP（域名） | 可选，客户端连接Workers的IP | `1.2.3.4` 或 `cf.example.com` 或 `mfa.gov.ua` |
-| 反代IP | 可选，Workers连接目标的IP | `1.2.3.4` 或域名 |
+| 反代Host | 可选，Workers连接目标的Host | `1.2.3.4` 或 `example.com` |
 | 身份令牌 | 可选，服务端验证 | `your-secret-token` |
 | ECH DoH 服务器 | 查询 ECH 公钥的 DoH 服务器 | `dns.alidns.com/dns-query` |
 | ECH 查询域名 | ECH 公钥所在域名 | `cloudflare-ech.com` |
 
 **参数说明：**
 - **优选IP**：用于客户端直接连接到Cloudflare Workers，绕过DNS解析
-- **反代IP**：传递给Workers服务端，用于Workers连接真实目标服务器
-  - 如果设置了反代IP，Workers优先使用该IP连接目标
-  - 如果反代IP连接失败，自动尝试使用FALLBACK_HOSTS
+- **反代Host**：传递给Workers服务端，用于Workers连接真实目标服务器
+  - 如果设置了反代Host，Workers优先使用该Host连接目标
+  - 如果反代Host连接失败，自动尝试使用FALLBACK_HOSTS
   - 支持IPv4、IPv6地址或域名
 
 ### 分流模式

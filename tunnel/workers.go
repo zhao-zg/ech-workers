@@ -26,14 +26,14 @@ import (
 // ======================== 全局参数 ========================
 
 var (
-	listenAddr  string
-	serverAddr  string
-	serverIP    string  // 优选IP，用于连接Workers服务器
-	proxyIP     string  // 反代IP，传递给Workers用于连接真实目标
-	token       string
-	dnsServer   string
-	echDomain   string
-	routingMode string // 分流模式: "global", "bypass_cn", "none"
+	listenAddr    string
+	serverAddr    string
+	serverIP      string // 优选IP，用于连接Workers服务器
+	fallbackHosts string // 反代Host，传递给Workers用于连接真实目标（支持域名和IP）
+	token         string
+	dnsServer     string
+	echDomain     string
+	routingMode   string // 分流模式: "global", "bypass_cn", "none"
 
 	echListMu sync.RWMutex
 	echList   []byte
@@ -63,8 +63,8 @@ type ipRangeV6 struct {
 
 // StartSocksProxy 启动 SOCKS5/HTTP 代理，供 Android 调用
 // ip: 优选IP，用于客户端连接Workers
-// proxy: 反代IP，传递给Workers用于连接真实目标
-func StartSocksProxy(host, wsServer, dns, ech, ip, proxy, tkn string) error {
+// fallback: 反代Host，传递给Workers用于连接真实目标（支持域名和IP）
+func StartSocksProxy(host, wsServer, dns, ech, ip, fallback, tkn string) error {
 	if wsServer == "" {
 		return fmt.Errorf("缺少 wss 服务地址")
 	}
@@ -72,7 +72,7 @@ func StartSocksProxy(host, wsServer, dns, ech, ip, proxy, tkn string) error {
 	listenAddr = host
 	serverAddr = wsServer
 	serverIP = ip
-	proxyIP = proxy
+	fallbackHosts = fallback
 	token = tkn
 
 	dnsServer = dns
@@ -1250,10 +1250,10 @@ func handleTunnel(conn net.Conn, target, clientAddr string, mode int, firstFrame
 		}
 	}
 
-	// 发送连接请求，如果设置了proxyIP，则传递给服务端用于反代连接
+	// 发送连接请求，如果设置了fallbackHosts，则传递给服务端用于反代连接
 	var connectMsg string
-	if proxyIP != "" {
-		connectMsg = fmt.Sprintf("CONNECT:%s|%s#%s", target, firstFrame, proxyIP)
+	if fallbackHosts != "" {
+		connectMsg = fmt.Sprintf("CONNECT:%s|%s#%s", target, firstFrame, fallbackHosts)
 	} else {
 		connectMsg = fmt.Sprintf("CONNECT:%s|%s", target, firstFrame)
 	}
