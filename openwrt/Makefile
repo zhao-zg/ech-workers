@@ -5,7 +5,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ech-workers
 PKG_VERSION:=$(shell git -C "$(CURDIR)/.." describe --tags --always 2>/dev/null | sed 's/^v//' || echo "1.0.0")
-PKG_RELEASE:=1
+PKG_RELEASE:=
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 
@@ -23,6 +23,7 @@ define Package/ech-workers
   SUBMENU:=Web Servers/Proxies
   TITLE:=ECH-enabled SOCKS5/HTTP proxy with intelligent routing
   URL:=https://github.com/zhao-zg/ech-workers
+  DEPENDS:=+redsocks +ipset +iptables-mod-nat-extra
 endef
 
 define Package/ech-workers/description

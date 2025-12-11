@@ -9,13 +9,131 @@ USE_PROCD=1
 PROG=/usr/bin/ech-workers
 CONF_DIR=/etc/ech-workers
 PID_FILE=/var/run/ech-workers.pid
+REDSOCKS_CONF=/var/etc/ech-workers-redsocks.conf
+REDSOCKS_PID=/var/run/ech-workers-redsocks.pid
+IPSET_CHN="chn_ip"
+
+setup_redsocks() {
+	local listen_port="${1##*:}"
+	
+	# 生成redsocks配置
+	cat > "$REDSOCKS_CONF" <<EOF
+base {
+	log_debug = off;
+	log_info = on;
+	log = "syslog:daemon";
+	daemon = on;
+	redirector = iptables;
+}
+
+redsocks {
+	local_ip = 0.0.0.0;
+	local_port = 12345;
+	ip = 127.0.0.1;
+	port = $listen_port;
+	type = socks5;
+}
+EOF
+	
+	# 启动redsocks
+	redsocks -c "$REDSOCKS_CONF" -p "$REDSOCKS_PID"
+	
+	logger -t ech-workers "Redsocks started on port 12345 -> SOCKS5 $listen_port"
+}
+
+stop_redsocks() {
+	[ -f "$REDSOCKS_PID" ] && {
+		kill $(cat "$REDSOCKS_PID") 2>/dev/null
+		rm -f "$REDSOCKS_PID"
+	}
+	rm -f "$REDSOCKS_CONF"
+	
+	logger -t ech-workers "Redsocks stopped"
+}
+
+setup_firewall() {
+	local routing_mode="$1"
+	
+	# 清理旧规则
+	iptables -t nat -D PREROUTING -p tcp -j ECH_WORKERS 2>/dev/null
+	iptables -t nat -D OUTPUT -p tcp -j ECH_WORKERS 2>/dev/null
+	iptables -t nat -F ECH_WORKERS 2>/dev/null
+	iptables -t nat -X ECH_WORKERS 2>/dev/null
+	
+	# 如果是none模式，不设置防火墙规则
+	[ "$routing_mode" = "none" ] && return 0
+	
+	# 创建自定义链
+	iptables -t nat -N ECH_WORKERS
+	
+	# 跳过本地回环和redsocks自身
+	iptables -t nat -A ECH_WORKERS -d 0.0.0.0/8 -j RETURN
+	iptables -t nat -A ECH_WORKERS -d 10.0.0.0/8 -j RETURN
+	iptables -t nat -A ECH_WORKERS -d 127.0.0.0/8 -j RETURN
+	iptables -t nat -A ECH_WORKERS -d 169.254.0.0/16 -j RETURN
+	iptables -t nat -A ECH_WORKERS -d 172.16.0.0/12 -j RETURN
+	iptables -t nat -A ECH_WORKERS -d 192.168.0.0/16 -j RETURN
+	iptables -t nat -A ECH_WORKERS -d 224.0.0.0/4 -j RETURN
+	iptables -t nat -A ECH_WORKERS -d 240.0.0.0/4 -j RETURN
+	
+	# bypass_cn模式：加载ipset并跳过中国IP
+	if [ "$routing_mode" = "bypass_cn" ]; then
+		# 创建ipset（如果不存在）
+		ipset list "$IPSET_CHN" >/dev/null 2>&1 || {
+			ipset create "$IPSET_CHN" hash:net
+			logger -t ech-workers "Created ipset: $IPSET_CHN"
+		}
+		
+		# 加载中国IP列表到ipset
+		if [ -f "$CONF_DIR/chn_ip.txt" ]; then
+			ipset flush "$IPSET_CHN"
+			while read -r ip; do
+				[ -n "$ip" ] && ipset add "$IPSET_CHN" "$ip" 2>/dev/null
+			done < "$CONF_DIR/chn_ip.txt"
+			logger -t ech-workers "Loaded China IP list to ipset"
+		fi
+		
+		# 跳过中国IP
+		iptables -t nat -A ECH_WORKERS -m set --match-set "$IPSET_CHN" dst -j RETURN
+	fi
+	
+	# 重定向TCP流量到redsocks端口（12345）
+	iptables -t nat -A ECH_WORKERS -p tcp -j REDIRECT --to-ports 12345
+	
+	# 应用规则到PREROUTING（转发流量）和OUTPUT（路由器本机流量）
+	iptables -t nat -A PREROUTING -p tcp -j ECH_WORKERS
+	iptables -t nat -A OUTPUT -p tcp -j ECH_WORKERS
+	
+	logger -t ech-workers "Firewall rules applied for mode: $routing_mode"
+}
+
+cleanup_firewall() {
+	# 清理iptables规则
+	iptables -t nat -D PREROUTING -p tcp -j ECH_WORKERS 2>/dev/null
+	iptables -t nat -D OUTPUT -p tcp -j ECH_WORKERS 2>/dev/null
+	iptables -t nat -F ECH_WORKERS 2>/dev/null
+	iptables -t nat -X ECH_WORKERS 2>/dev/null
+	
+	# 清理ipset
+	ipset flush "$IPSET_CHN" 2>/dev/null
+	ipset destroy "$IPSET_CHN" 2>/dev/null
+	
+	logger -t ech-workers "Firewall rules cleaned up"
+}
 
 start_service() {
 	config_load ech-workers
 	
 	local enabled
 	config_get_bool enabled main enabled 0
-	[ "$enabled" -eq 0 ] && return 0
+	
+	# 如果未启用，清理防火墙规则后退出
+	if [ "$enabled" -eq 0 ]; then
+		stop_redsocks
+		cleanup_firewall
+		logger -t ech-workers "Service disabled, cleaned up firewall rules"
+		return 0
+	fi
 	
 	local listen_addr
 	local server_addr
@@ -39,6 +157,12 @@ start_service() {
 		logger -t ech-workers "Error: server_addr is not configured"
 		return 1
 	}
+	
+	# 如果server_addr没有端口号，默认添加:443
+	if ! echo "$server_addr" | grep -q ":[0-9]*$"; then
+		server_addr="${server_addr}:443"
+		logger -t ech-workers "Added default port 443 to server_addr: $server_addr"
+	fi
 	
 	# 确保 IP 列表文件存在
 	mkdir -p "$CONF_DIR"
@@ -69,10 +193,22 @@ start_service() {
 	
 	procd_close_instance
 	
+	# 启动redsocks进行透明代理转换
+	setup_redsocks "$listen_addr"
+	
+	# 设置透明代理防火墙规则
+	setup_firewall "$routing_mode"
+	
 	logger -t ech-workers "Started with routing mode: $routing_mode"
 }
 
 stop_service() {
+	# 停止redsocks
+	stop_redsocks
+	
+	# 清理防火墙规则
+	cleanup_firewall
+	
 	logger -t ech-workers "Stopping service"
 }
 

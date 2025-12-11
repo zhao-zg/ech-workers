@@ -5,7 +5,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-ech-workers
 PKG_VERSION:=$(shell git -C "$(CURDIR)/../.." describe --tags --always 2>/dev/null | sed 's/^v//' || echo "1.0.0")
-PKG_RELEASE:=1
+PKG_RELEASE:=
 
 PKG_LICENSE:=GPL-3.0
 PKG_MAINTAINER:=zhao-zg

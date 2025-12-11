@@ -5,8 +5,9 @@ local sys = require "luci.sys"
 local uci = require "luci.model.uci".cursor()
 
 m = Map("ech-workers", translate("ECH-Workers"), 
-	translate("ECH-enabled SOCKS5/HTTP proxy with intelligent routing. " ..
-	"Supports Encrypted Client Hello (ECH) and automatic China mainland bypass."))
+	translate("ECH-enabled transparent proxy with intelligent routing. " ..
+	"Supports Encrypted Client Hello (ECH) and automatic China mainland bypass. " ..
+	"Traffic is automatically intercepted via iptables + redsocks."))
 
 -- 状态区域
 s = m:section(TypedSection, "ech-workers", translate("Service Status"))
@@ -16,6 +17,11 @@ s.addremove = false
 o = s:option(DummyValue, "_status", translate("Running Status"))
 o.template = "ech-workers/status"
 o.value = translate("Collecting data...")
+
+o = s:option(DummyValue, "_transparent_note", translate("Transparent Proxy Mode"))
+o.rawhtml = true
+o.value = translate("<strong>All TCP traffic from LAN clients will be automatically proxied when enabled.</strong><br/>" ..
+	"No manual proxy settings needed on client devices.")
 
 -- 代理测试（未启用时也可用）
 o = s:option(DummyValue, "_proxy_test", translate("Connection Test"))
@@ -31,7 +37,7 @@ o = s:option(Flag, "enabled", translate("Enable Service"))
 o.rmempty = false
 
 o = s:option(Value, "server_addr", translate("Server Address"),
-	translate("Cloudflare Workers server address (format: domain:port/path)"))
+	translate("Cloudflare Workers server address (format: domain:port/path). Default port is 443 if not specified."))
 o.placeholder = "your-worker.workers.dev:443"
 o.rmempty = false
 

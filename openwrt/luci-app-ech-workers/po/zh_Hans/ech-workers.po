@@ -7,8 +7,17 @@ msgstr "ECH-Workers"
 msgid "ECH-enabled SOCKS5/HTTP proxy with intelligent routing. Supports Encrypted Client Hello (ECH) and automatic China mainland bypass."
 msgstr "支持 ECH 的 SOCKS5/HTTP 代理，具有智能分流功能。支持加密客户端 Hello (ECH) 和自动跳过中国大陆。"
 
+msgid "ECH-enabled transparent proxy with intelligent routing. Supports Encrypted Client Hello (ECH) and automatic China mainland bypass. Traffic is automatically intercepted via iptables + redsocks."
+msgstr "支持 ECH 的透明代理，具有智能分流功能。支持加密客户端 Hello (ECH) 和自动跳过中国大陆。流量通过 iptables + redsocks 自动拦截。"
+
 msgid "Service Status"
 msgstr "服务状态"
+
+msgid "Transparent Proxy Mode"
+msgstr "透明代理模式"
+
+msgid "<strong>All TCP traffic from LAN clients will be automatically proxied when enabled.</strong><br/>No manual proxy settings needed on client devices."
+msgstr "<strong>启用后，来自局域网客户端的所有TCP流量将自动被代理。</strong><br/>客户端设备无需手动配置代理。"
 
 msgid "Running Status"
 msgstr "运行状态"
@@ -45,6 +54,9 @@ msgstr "服务器地址"
 
 msgid "Cloudflare Workers server address (format: domain:port/path)"
 msgstr "Cloudflare Workers 服务器地址（格式：域名:端口/路径）"
+
+msgid "Cloudflare Workers server address (format: domain:port/path). Default port is 443 if not specified."
+msgstr "Cloudflare Workers 服务器地址（格式：域名:端口/路径）。未指定端口时默认为443。"
 
 msgid "Listen Address"
 msgstr "监听地址"

@@ -129,11 +129,30 @@ signingConfigs {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-}
 
-plugins.withId('base') {
-    base {
-        archivesName = "${android.defaultConfig.applicationId}-${android.defaultConfig.versionName}"
+    // 设置APK输出文件名
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def abi = output.getFilter(com.android.build.OutputFile.ABI)
+            def versionName = variant.versionName
+            def buildType = variant.buildType.name
+            
+            if (abi != null) {
+                // 带架构的APK
+                if (buildType == 'release') {
+                    outputFileName = "com.ech.workers-${versionName}-${abi}-release.apk"
+                } else {
+                    outputFileName = "com.ech.workers-${versionName}-${abi}.apk"
+                }
+            } else {
+                // 通用APK
+                if (buildType == 'release') {
+                    outputFileName = "com.ech.workers-${versionName}-universal-release.apk"
+                } else {
+                    outputFileName = "com.ech.workers-${versionName}-universal.apk"
+                }
+            }
+        }
     }
 }
 
