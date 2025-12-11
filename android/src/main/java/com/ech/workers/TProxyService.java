@@ -59,8 +59,17 @@ public class TProxyService extends VpnService {
 
     @Override
     public void onDestroy() {
+        // 只在这里清理资源，不调用 stopService
+        // stopService 应该只在明确要求停止时调用
         super.onDestroy();
     }
+
+	@Override
+	public void onTaskRemoved(Intent rootIntent) {
+		// 当应用从最近任务中移除时，不停止服务
+		// 前台服务应该继续运行
+		super.onTaskRemoved(rootIntent);
+	}
 
 	@Override
 	public void onRevoke() {

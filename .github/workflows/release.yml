@@ -78,6 +78,11 @@ jobs:
       with:
         gradle-version: 8.5
     
+    - name: Create VERSION file
+      run: |
+        echo "${{ github.ref_name }}" > VERSION
+        cat VERSION
+    
     - name: Build APK (Debug)
       working-directory: ./android
       env:
