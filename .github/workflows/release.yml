@@ -162,6 +162,8 @@ jobs:
         cp -r ../openwrt/* package/ech-workers/
         mkdir -p package/luci-app-ech-workers
         cp -r ../openwrt/luci-app-ech-workers/* package/luci-app-ech-workers/
+        # Use defconfig instead of menuconfig
+        make defconfig
         # Build packages
         make package/ech-workers/compile V=s
         make package/luci-app-ech-workers/compile V=s
