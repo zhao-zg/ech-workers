@@ -112,13 +112,12 @@ plugins.withId('base') {
 }
 
 repositories {
-        flatDir { dirs rootProject.projectDir }
+    flatDir {
+        dirs rootProject.projectDir
+    }
 }
 
 dependencies {
-        implementation 'androidx.appcompat:appcompat:1.4.1'
-        // AAR dependency - only add if file exists
-        if (file("${rootProject.projectDir}/ech-workers.aar").exists()) {
-            implementation(name: 'ech-workers', ext: 'aar')
-        }
+    implementation 'androidx.appcompat:appcompat:1.4.1'
+    implementation(name: 'ech-workers', ext: 'aar')
 }
