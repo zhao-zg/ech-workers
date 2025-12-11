@@ -153,6 +153,11 @@ public class MainActivity extends Activity {
             return;
         }
         
+        // 如果 serverAddr 没有端口号，自动添加 :443
+        if (!serverAddr.contains(":") || serverAddr.indexOf("://") > serverAddr.lastIndexOf(":")) {
+            serverAddr = serverAddr + ":443";
+        }
+        
         // 保存当前配置到 Preferences 用于 TProxyService
         Preferences appPrefs = new Preferences(this);
         appPrefs.setWssAddr(serverAddr);
@@ -216,8 +221,8 @@ public class MainActivity extends Activity {
             ipText.setVisibility(View.VISIBLE);
             latencyText.setVisibility(View.VISIBLE);
             
-            // TODO: 显示实际IP和国旗
-            ipText.setText(getString(R.string.ip_format, "检测中..."));
+            // 获取真实 IP 和国家信息
+            fetchIpInfo();
         } else {
             statusText.setText(R.string.not_connected);
             btnToggle.setText(R.string.start_service);
@@ -255,5 +260,94 @@ public class MainActivity extends Activity {
                 });
             }
         }).start();
+    }
+    
+    private void fetchIpInfo() {
+        ipText.setText(getString(R.string.ip_format, "检测中..."));
+        
+        new Thread(() -> {
+            try {
+                java.net.URL url = new java.net.URL("https://api.ip.sb/geoip");
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setConnectTimeout(5000);
+                conn.setReadTimeout(5000);
+                
+                int responseCode = conn.getResponseCode();
+                if (responseCode == 200) {
+                    java.io.BufferedReader reader = new java.io.BufferedReader(
+                        new java.io.InputStreamReader(conn.getInputStream()));
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        response.append(line);
+                    }
+                    reader.close();
+                    
+                    // 解析 JSON (简单解析)
+                    String json = response.toString();
+                    String ip = extractJsonValue(json, "ip");
+                    String country = extractJsonValue(json, "country");
+                    String countryCode = extractJsonValue(json, "country_code");
+                    
+                    final String displayText = ip + " (" + country + ")";
+                    final String flagEmoji = getFlagEmoji(countryCode);
+                    
+                    runOnUiThread(() -> {
+                        ipText.setText(getString(R.string.ip_format, displayText));
+                        // 可以设置国旗表情符号或图标
+                        if (!flagEmoji.isEmpty()) {
+                            statusText.setText(getString(R.string.connected) + " " + flagEmoji);
+                        }
+                    });
+                } else {
+                    runOnUiThread(() -> {
+                        ipText.setText(getString(R.string.ip_format, "检测失败"));
+                    });
+                }
+                conn.disconnect();
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    ipText.setText(getString(R.string.ip_format, "检测失败"));
+                });
+            }
+        }).start();
+    }
+    
+    private String extractJsonValue(String json, String key) {
+        try {
+            String searchKey = "\"" + key + "\":";
+            int startIndex = json.indexOf(searchKey);
+            if (startIndex == -1) return "";
+            
+            startIndex += searchKey.length();
+            // Skip whitespace and quotes
+            while (startIndex < json.length() && 
+                   (json.charAt(startIndex) == ' ' || json.charAt(startIndex) == '\"')) {
+                startIndex++;
+            }
+            
+            int endIndex = startIndex;
+            while (endIndex < json.length() && 
+                   json.charAt(endIndex) != '\"' && 
+                   json.charAt(endIndex) != ',' && 
+                   json.charAt(endIndex) != '}') {
+                endIndex++;
+            }
+            
+            return json.substring(startIndex, endIndex).trim();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+    
+    private String getFlagEmoji(String countryCode) {
+        if (countryCode == null || countryCode.length() != 2) return "";
+        
+        countryCode = countryCode.toUpperCase();
+        int firstChar = Character.codePointAt(countryCode, 0) - 0x41 + 0x1F1E6;
+        int secondChar = Character.codePointAt(countryCode, 1) - 0x41 + 0x1F1E6;
+        
+        return new String(Character.toChars(firstChar)) + new String(Character.toChars(secondChar));
     }
 }

@@ -246,7 +246,7 @@ public class TProxyService extends VpnService {
             try { tunFd.close(); } catch (IOException e) {}
             tunFd = null;
         }
-        System.exit(0);
+        stopSelf();
     }
 
     private void runWithTimeout(Runnable task, long timeoutMs, String name) {
