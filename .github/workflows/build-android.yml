@@ -74,6 +74,15 @@ jobs:
         export PATH=$PATH:$(go env GOPATH)/bin
         cd mobile
         gomobile bind -v -target=android -androidapi=24 -o ../android/ech-workers.aar .
+        
+    - name: Verify AAR file
+      run: |
+        if [ ! -f android/ech-workers.aar ]; then
+          echo "Error: AAR file not found at android/ech-workers.aar"
+          ls -la android/
+          exit 1
+        fi
+        echo "AAR file found: $(ls -lh android/ech-workers.aar)"
     
     - name: Cache Gradle packages
       uses: actions/cache@v4
