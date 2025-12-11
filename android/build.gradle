@@ -10,7 +10,16 @@ buildscript {
 
 apply plugin: 'com.android.application'
 
+// 缓存版本号,避免多次计算
+ext.cachedVersionName = null
+
 def getVersionName() {
+    // 如果已经缓存,直接返回
+    if (ext.cachedVersionName != null) {
+        println("Using cached version: ${ext.cachedVersionName}")
+        return ext.cachedVersionName
+    }
+    
     println("========== Version Detection Debug ==========")
     println("Current directory: ${projectDir}")
     println("Root directory: ${rootDir}")
@@ -19,10 +28,11 @@ def getVersionName() {
     if (project.hasProperty('APP_VERSION')) {
         def prop = project.property('APP_VERSION')?.toString()?.trim()
         println("0. APP_VERSION property: ${prop}")
-        if (prop && prop.toLowerCase() != 'null') {
+        if (prop && prop != '' && prop.toLowerCase() != 'null') {
             def version = prop.replaceAll('^v', '')
             if (version.matches('[0-9]+\\.[0-9]+\\.[0-9]+')) {
                 println("✓ Using version from APP_VERSION property: $version")
+                ext.cachedVersionName = version
                 return version
             }
         }
@@ -30,11 +40,13 @@ def getVersionName() {
 
     // 1. 优先从环境变量获取（GitHub Actions）
     def envVersion = System.getenv('GITHUB_REF_NAME') ?: System.getenv('GITHUB_REF') ?: System.getenv('REF_NAME')
-    println("1. GITHUB_REF_NAME / GITHUB_REF: ${envVersion}")
-    if (envVersion && envVersion.toString().trim() && envVersion.toString().trim().toLowerCase() != 'null') {
-        def version = envVersion.replaceAll('^v', '').toString().trim()
+    println("1. GITHUB_REF_NAME / GITHUB_REF / REF_NAME: ${envVersion}")
+    if (envVersion && envVersion.toString().trim() != '' && envVersion.toString().trim().toLowerCase() != 'null') {
+        def version = envVersion.toString().replaceAll('^(refs/tags/)?v', '').trim()
+        println("   Cleaned version: ${version}")
         if (version.matches('[0-9]+\\.[0-9]+\\.[0-9]+')) {
-            println("✓ Using version from GITHUB_REF_NAME: $version")
+            println("✓ Using version from environment: $version")
+            ext.cachedVersionName = version
             return version
         }
     }
@@ -44,11 +56,12 @@ def getVersionName() {
     println("2. VERSION file path: ${versionFile.absolutePath}, exists: ${versionFile.exists()}")
     if (versionFile.exists()) {
         def versionRaw = versionFile.text?.trim()
-        println("   VERSION file content: ${versionRaw}")
-        if (versionRaw && versionRaw.toLowerCase() != 'null') {
+        println("   VERSION file content: '${versionRaw}'")
+        if (versionRaw && versionRaw != '' && versionRaw.toLowerCase() != 'null') {
             def version = versionRaw.replaceAll('^v', '')
             if (version && version.matches('[0-9]+\\.[0-9]+\\.[0-9]+')) {
                 println("✓ Using version from VERSION file: $version")
+                ext.cachedVersionName = version
                 return version
             }
         }
@@ -66,11 +79,12 @@ def getVersionName() {
         println("   Git exit code: ${process.exitValue()}")
         if (process.exitValue() == 0) {
             def gitVersion = output.toString().trim()
-            println("   Git output: ${gitVersion}")
-            if (gitVersion && gitVersion.toLowerCase() != 'null' && gitVersion.startsWith('v')) {
+            println("   Git output: '${gitVersion}'")
+            if (gitVersion && gitVersion != '' && gitVersion.toLowerCase() != 'null' && gitVersion.startsWith('v')) {
                 def version = gitVersion.substring(1)
                 if (version.matches('[0-9]+\\.[0-9]+\\.[0-9]+')) {
                     println("✓ Using version from git tag: $version")
+                    ext.cachedVersionName = version
                     return version
                 }
             }
@@ -91,6 +105,7 @@ def getVersionName() {
         if (matcher.find()) {
             def version = matcher.group(1)
             println("✓ Using version from version.go: $version")
+            ext.cachedVersionName = version
             return version
         }
     }
@@ -99,16 +114,22 @@ def getVersionName() {
     def defaultVersion = "1.0.12"
     println("⚠ Warning: Could not determine version, using default: $defaultVersion")
     println("=============================================")
+    
+    // 缓存结果
+    ext.cachedVersionName = defaultVersion
     return defaultVersion
 }
 
 def getVersionCode() {
     def version = getVersionName()
+    if (version == null || version == 'null') {
+        return 10012
+    }
     def parts = version.split('\\.')
     if (parts.length == 3) {
         return parts[0].toInteger() * 10000 + parts[1].toInteger() * 100 + parts[2].toInteger()
     }
-    return 10008
+    return 10012
 }
 
 android {
@@ -224,8 +245,12 @@ signingConfigs {
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
             // 直接调用 getVersionName() 获取版本号
-            def safeVersion = getVersionName()
-            println("Setting APK filename with version: ${safeVersion}")
+            def versionName = getVersionName()
+            println("========== APK Filename Configuration ==========")
+            println("Variant: ${variant.name}")
+            println("Version from getVersionName(): '${versionName}'")
+            println("Version is null: ${versionName == null}")
+            println("Version string value: '${versionName.toString()}'")
 
             def abi = output.getFilter(com.android.build.OutputFile.ABI)
             def buildType = variant.buildType.name
@@ -233,19 +258,20 @@ signingConfigs {
             if (abi != null) {
                 // 带架构的APK
                 if (buildType == 'release') {
-                    outputFileName = "com.ech.workers-${safeVersion}-${abi}-release.apk"
+                    outputFileName = "com.ech.workers-${versionName}-${abi}-release.apk"
                 } else {
-                    outputFileName = "com.ech.workers-${safeVersion}-${abi}.apk"
+                    outputFileName = "com.ech.workers-${versionName}-${abi}.apk"
                 }
             } else {
                 // 通用APK
                 if (buildType == 'release') {
-                    outputFileName = "com.ech.workers-${safeVersion}-universal-release.apk"
+                    outputFileName = "com.ech.workers-${versionName}-universal-release.apk"
                 } else {
-                    outputFileName = "com.ech.workers-${safeVersion}-universal.apk"
+                    outputFileName = "com.ech.workers-${versionName}-universal.apk"
                 }
             }
-            println("Output filename: ${outputFileName}")
+            println("Final output filename: ${outputFileName}")
+            println("================================================")
         }
     }
 }
