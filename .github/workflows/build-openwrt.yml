@@ -66,10 +66,19 @@ jobs:
         mkdir -p openwrt-sdk/package/ech-workers/src
         cp -r tunnel/* openwrt-sdk/package/ech-workers/src/
     
+    - name: Configure minimal build
+      working-directory: ./openwrt-sdk
+      run: |
+        # 创建最小配置以避免 menuconfig
+        echo "CONFIG_TARGET_x86=y" > .config
+        echo "CONFIG_TARGET_x86_64=y" >> .config
+        echo "CONFIG_TARGET_x86_64_DEVICE_generic=y" >> .config
+        make defconfig
+    
     - name: Build packages
       working-directory: ./openwrt-sdk
       run: |
-        # 直接编译包,跳过耗时的 defconfig
+        # 编译包
         make package/ech-workers/compile V=s -j$(nproc)
         make package/luci-app-ech-workers/compile V=s -j$(nproc)
     
