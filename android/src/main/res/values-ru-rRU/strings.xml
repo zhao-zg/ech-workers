@@ -15,6 +15,15 @@
 	<string name="pref_ip">Предпочтительный IP (домен):</string>
 	<string name="fallback_hosts">Резервный Host (опционально):</string>
 	<string name="token">Токен авторизации:</string>
+	<string name="server_config">Конфигурация сервера</string>
+	<string name="advanced_settings">Расширенные настройки</string>
+	<string name="routing_settings">Настройки маршрутизации</string>
+	<string name="optional">Опционально</string>
+	<string name="test_latency">Тест</string>
+	<string name="testing">Тестирование...</string>
+	<string name="latency_result">Задержка: %d мс</string>
+	<string name="latency_timeout">Тайм-аут соединения</string>
+	<string name="latency_error">Ошибка теста</string>
 	<string name="routing_mode">Режим маршрутизации:</string>
 	<string name="routing_mode_global">Глобальный прокси</string>
 	<string name="routing_mode_bypass_cn">Обход Китая</string>

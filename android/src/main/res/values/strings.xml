@@ -16,6 +16,19 @@
         <string name="fallback_hosts">反代Host（可选）：</string>
         <string name="token">身份令牌：</string>
         
+        <!-- UI Sections -->
+        <string name="server_config">服务器配置</string>
+        <string name="advanced_settings">高级设置</string>
+        <string name="routing_settings">路由设置</string>
+        <string name="optional">可选</string>
+        
+        <!-- Latency Test -->
+        <string name="test_latency">测延迟</string>
+        <string name="testing">测试中...</string>
+        <string name="latency_result">延迟: %d ms</string>
+        <string name="latency_timeout">连接超时</string>
+        <string name="latency_error">测试失败</string>
+        
         <!-- Routing Mode -->
         <string name="routing_mode">分流模式：</string>
         <string name="routing_mode_global">全局代理</string>

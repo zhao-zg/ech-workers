@@ -30,6 +30,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.net.Socket;
+import java.net.InetSocketAddress;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.SSLSocket;
 
 public class MainActivity extends Activity implements View.OnClickListener {
 	private Preferences prefs;
@@ -46,6 +50,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private EditText edittext_fallback_hosts;
     private EditText edittext_token;
     private Spinner spinner_routing_mode;
+    private Button btn_test_latency;
+    private TextView latency_result;
     // IPv4/IPv6 默认启用，不在 UI 展示
     private Button button_control;
 
@@ -70,12 +76,15 @@ public class MainActivity extends Activity implements View.OnClickListener {
         edittext_fallback_hosts = (EditText) findViewById(R.id.fallback_hosts);
         edittext_token = (EditText) findViewById(R.id.token);
         spinner_routing_mode = (Spinner) findViewById(R.id.routing_mode_spinner);
+        btn_test_latency = (Button) findViewById(R.id.btn_test_latency);
+        latency_result = (TextView) findViewById(R.id.latency_result);
         button_control = (Button) findViewById(R.id.control);
 
         btn_add_profile.setOnClickListener(this);
         btn_save_profile.setOnClickListener(this);
         btn_rename_profile.setOnClickListener(this);
         btn_delete_profile.setOnClickListener(this);
+        btn_test_latency.setOnClickListener(this);
         button_control.setOnClickListener(this);
         
         initRoutingModeSpinner();
@@ -311,6 +320,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
             showRenameProfileDialog();
         } else if (view == btn_delete_profile) {
             deleteCurrentProfile();
+        } else if (view == btn_test_latency) {
+            testLatency();
         } else if (view == button_control) {
             boolean isEnable = prefs.getEnable();
             if (isEnable) {
@@ -366,6 +377,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         btn_save_profile.setEnabled(editable);
         btn_rename_profile.setEnabled(editable);
         btn_delete_profile.setEnabled(editable);
+        btn_test_latency.setEnabled(editable);
 
         int grey = 0xFFBDBDBD;
         spinner_profiles.setAlpha(editable ? 1.0f : 0.5f);
@@ -373,6 +385,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         btn_save_profile.setBackgroundTintList(android.content.res.ColorStateList.valueOf(editable ? 0xFF2196F3 : grey));
         btn_rename_profile.setBackgroundTintList(android.content.res.ColorStateList.valueOf(editable ? 0xFFFF9800 : grey));
         btn_delete_profile.setBackgroundTintList(android.content.res.ColorStateList.valueOf(editable ? 0xFFF44336 : grey));
+        btn_test_latency.setBackgroundTintList(android.content.res.ColorStateList.valueOf(editable ? 0xFF9C27B0 : grey));
 
         if (editable) {
           button_control.setText(R.string.control_enable);
@@ -407,5 +420,83 @@ public class MainActivity extends Activity implements View.OnClickListener {
         prefs.setIpv6(true);
         prefs.setUdpInTcp(false);
         prefs.setRemoteDns(true);
+    }
+
+    private void testLatency() {
+        String wssAddr = edittext_wss_addr.getText().toString().trim();
+        if (wssAddr.isEmpty()) {
+            Toast.makeText(this, "请先输入服务器地址", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 解析地址和端口
+        String host;
+        int port = 443;
+        try {
+            String[] parts = wssAddr.split(":");
+            host = parts[0];
+            if (parts.length > 1) {
+                String portPath = parts[1];
+                int slashIndex = portPath.indexOf('/');
+                if (slashIndex > 0) {
+                    port = Integer.parseInt(portPath.substring(0, slashIndex));
+                } else {
+                    port = Integer.parseInt(portPath);
+                }
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "服务器地址格式错误", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        final String finalHost = host;
+        final int finalPort = port;
+
+        // 禁用按钮并显示测试中
+        btn_test_latency.setEnabled(false);
+        btn_test_latency.setText(R.string.testing);
+        latency_result.setVisibility(View.GONE);
+
+        // 在后台线程进行测试
+        final Handler handler = new Handler(Looper.getMainLooper());
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                long latency = -1;
+                try {
+                    long startTime = System.currentTimeMillis();
+                    
+                    // 使用SSL连接测试
+                    SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+                    SSLSocket socket = (SSLSocket) factory.createSocket();
+                    socket.connect(new InetSocketAddress(finalHost, finalPort), 5000);
+                    socket.close();
+                    
+                    long endTime = System.currentTimeMillis();
+                    latency = endTime - startTime;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                final long finalLatency = latency;
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        btn_test_latency.setEnabled(true);
+                        btn_test_latency.setText(R.string.test_latency);
+                        
+                        if (finalLatency > 0) {
+                            latency_result.setText(String.format(getString(R.string.latency_result), finalLatency));
+                            latency_result.setTextColor(0xFF4CAF50); // Green
+                            latency_result.setVisibility(View.VISIBLE);
+                        } else {
+                            latency_result.setText(R.string.latency_timeout);
+                            latency_result.setTextColor(0xFFF44336); // Red
+                            latency_result.setVisibility(View.VISIBLE);
+                        }
+                    }
+                });
+            }
+        }).start();
     }
 }
