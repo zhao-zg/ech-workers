@@ -48,6 +48,9 @@ endef
 define Package/ech-workers/postinst
 #!/bin/sh
 [ -n "$${IPKG_INSTROOT}" ] || {
+	# 清理可能存在的旧防火墙规则
+	/etc/init.d/ech-workers stop 2>/dev/null
+	
 	# 如果存在-opkg备份文件，说明配置文件有冲突
 	if [ -f /etc/config/ech-workers-opkg ]; then
 		# 检查旧配置文件是否存在fallback_hosts选项
@@ -58,6 +61,11 @@ define Package/ech-workers/postinst
 		# 删除-opkg备份文件
 		rm -f /etc/config/ech-workers-opkg
 	fi
+	
+	# 确保服务默认不启动(用户需要手动启用)
+	/etc/init.d/ech-workers disable 2>/dev/null
+	
+	echo "ECH-Workers installed. Use 'uci set ech-workers.main.enabled=1; uci commit' to enable."
 	exit 0
 }
 endef

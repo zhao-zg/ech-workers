@@ -16,16 +16,6 @@ setup_firewall() {
 	local routing_mode="$1"
 	local listen_port="$2"
 	
-	# 清理旧规则 (IPv4)
-	iptables -t nat -D PREROUTING -p tcp -j ECH_WORKERS 2>/dev/null
-	iptables -t nat -F ECH_WORKERS 2>/dev/null
-	iptables -t nat -X ECH_WORKERS 2>/dev/null
-	
-	# 清理旧规则 (IPv6)
-	ip6tables -t nat -D PREROUTING -p tcp -j ECH_WORKERS 2>/dev/null
-	ip6tables -t nat -F ECH_WORKERS 2>/dev/null
-	ip6tables -t nat -X ECH_WORKERS 2>/dev/null
-	
 	# 如果是none模式，不设置防火墙规则
 	[ "$routing_mode" = "none" ] && return 0
 	
@@ -224,7 +214,10 @@ start_service() {
 	# 提取端口号
 	local listen_port="${listen_addr##*:}"
 	
-	# 设置防火墙规则（仅ipset，不做透明代理）
+	# 先清理旧的防火墙规则
+	cleanup_firewall
+	
+	# 设置新的防火墙规则
 	setup_firewall "$routing_mode" "$listen_port"
 	
 	logger -t ech-workers "Started with routing mode: $routing_mode (manual proxy mode)"
