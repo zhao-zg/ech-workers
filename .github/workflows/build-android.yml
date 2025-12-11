@@ -137,11 +137,30 @@ jobs:
         ls -la android/
         echo "Gradle will look for AAR in: $(cd android && pwd)"
     
+    - name: Verify AAR before Gradle build
+      run: |
+        echo "=== Verifying AAR file before build ==="
+        ls -lh android/ech-workers.aar
+        file android/ech-workers.aar
+        unzip -l android/ech-workers.aar | head -20
+        echo "=== AAR verification complete ==="
+    
     - name: Build APK (Debug)
       working-directory: ./android
       run: |
         echo "Building APK with Gradle..."
-        ./gradlew assembleDebug --stacktrace
+        ./gradlew assembleDebug --stacktrace --info
+    
+    - name: Verify APK contains native libraries
+      working-directory: ./android
+      run: |
+        echo "=== Checking APK contents ==="
+        for apk in build/outputs/apk/debug/*.apk; do
+          if [ -f "$apk" ]; then
+            echo "Checking $apk:"
+            unzip -l "$apk" | grep -E '\.so$|classes.dex|ech-workers' || echo "No native libraries or DEX found!"
+          fi
+        done
     
     - name: Sign APK
       if: startsWith(github.ref, 'refs/tags/')

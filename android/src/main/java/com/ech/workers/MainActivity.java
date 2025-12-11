@@ -73,6 +73,20 @@ public class MainActivity extends Activity {
         });
         
         Log.d(TAG, "onCreate: Starting");
+        
+        // 检查native库是否可用
+        try {
+            Log.d(TAG, "onCreate: Testing mobile.Mobile class availability");
+            Class.forName("mobile.Mobile");
+            Log.d(TAG, "onCreate: mobile.Mobile class found");
+        } catch (ClassNotFoundException e) {
+            Log.e(TAG, "onCreate: mobile.Mobile class NOT found - AAR missing or not loaded!", e);
+            Toast.makeText(this, "错误: 缺少核心库文件,请重新安装应用", Toast.LENGTH_LONG).show();
+            // 继续执行,但显示错误信息
+        } catch (Exception e) {
+            Log.e(TAG, "onCreate: Error checking mobile.Mobile class", e);
+        }
+        
         try {
             Log.d(TAG, "onCreate: Setting content view");
             setContentView(R.layout.activity_main);
