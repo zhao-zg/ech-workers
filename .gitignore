@@ -1,0 +1,91 @@
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+vendor/
+
+# Android
+*.iml
+.gradle
+local.properties
+.idea/
+.DS_Store
+build/
+captures/
+.externalNativeBuild
+.cxx
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+bin/
+gen/
+out/
+*.log
+*.keystore
+!debug.keystore
+
+# Android NDK
+obj/
+libs/
+*.so
+*.a
+*.aar
+
+# OpenWrt
+*.ipk
+*.o
+*.ko
+.config
+.config.old
+*.orig
+*.rej
+*~
+.*.cmd
+.*.d
+.*.tmp
+*.mod.c
+*.order
+*.symvers
+*.markers
+stamp-*
+staging_dir/
+bin/
+build_dir/
+dl/
+feeds/
+logs/
+tmp/
+openwrt-sdk/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# System
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+*.cache
+
+# Secrets
+*.pem
+*.key
+*.crt
+keystore.jks
+secrets.yml
+.env

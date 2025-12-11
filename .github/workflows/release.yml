@@ -1,0 +1,89 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Extract version
+      id: version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+    
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ steps.version.outputs.VERSION }}
+        body: |
+          ## ECH-Workers ${{ steps.version.outputs.VERSION }}
+          
+          ### 功能特性
+          - ✅ 支持 ECH (Encrypted Client Hello) 加密
+          - ✅ SOCKS5/HTTP 代理支持
+          - ✅ 智能分流（全局代理/跳过中国大陆/直连）
+          - ✅ 自动更新中国 IP 列表
+          - ✅ Android 和 OpenWrt 双平台支持
+          
+          ### 下载说明
+          
+          **Android 客户端:**
+          - `ech-workers-signed.apk` - 已签名版本（推荐）
+          - `ech-workers-unsigned.apk` - 未签名版本
+          
+          **OpenWrt 软件包:**
+          - `ech-workers_*_x86_64.ipk` - x86_64 架构
+          - `ech-workers_*_aarch64.ipk` - ARM64 架构
+          - `ech-workers_*_mipsel_24kc.ipk` - MIPS 架构
+          - `luci-app-ech-workers_*.ipk` - LuCI Web 界面（所有架构通用）
+          
+          ### 安装方法
+          
+          **Android:**
+          ```bash
+          # 下载 APK 文件后直接安装
+          adb install ech-workers-signed.apk
+          ```
+          
+          **OpenWrt:**
+          ```bash
+          # 上传 IPK 文件到路由器
+          opkg update
+          opkg install ech-workers_*.ipk
+          opkg install luci-app-ech-workers_*.ipk
+          
+          # 启动服务
+          /etc/init.d/ech-workers enable
+          /etc/init.d/ech-workers start
+          ```
+          
+          ### 配置说明
+          
+          详细配置说明请参考项目 README.md
+          
+          ### 更新日志
+          
+          - 初始发布版本
+        draft: false
+        prerelease: false
+
+  build-android:
+    needs: create-release
+    uses: ./.github/workflows/build-android.yml
+    secrets: inherit
+
+  build-openwrt:
+    needs: create-release
+    uses: ./.github/workflows/build-openwrt.yml

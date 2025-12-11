@@ -1,0 +1,23 @@
+{
+	"luci-app-ech-workers": {
+		"description": "Grant access to ECH-Workers configuration",
+		"read": {
+			"uci": [ "ech-workers" ],
+			"ubus": {
+				"service": [ "list" ]
+			},
+			"file": {
+				"/etc/ech-workers/*": [ "read" ]
+			}
+		},
+		"write": {
+			"uci": [ "ech-workers" ],
+			"ubus": {
+				"service": [ "list" ]
+			},
+			"file": {
+				"/etc/ech-workers/*": [ "write" ]
+			}
+		}
+	}
+}

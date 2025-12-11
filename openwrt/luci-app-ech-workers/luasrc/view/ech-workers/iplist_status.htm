@@ -1,0 +1,64 @@
+<%+cbi/valueheader%>
+
+<script type="text/javascript">
+	function updateIPListStatus() {
+		XHR.get('<%=luci.dispatcher.build_url("admin", "services", "ech-workers", "status")%>', null,
+			function(x, result) {
+				var statusHtml = '<table style="width: 100%; border-collapse: collapse;">';
+				statusHtml += '<tr><th style="text-align: left; padding: 5px;">Type</th><th style="text-align: left; padding: 5px;">Status</th><th style="text-align: left; padding: 5px;">Last Update</th></tr>';
+				
+				// IPv4 状态
+				statusHtml += '<tr><td style="padding: 5px;">IPv4 List</td><td style="padding: 5px;">';
+				if (result.ipv4_loaded) {
+					statusHtml += '<span style="color: green;">✓ Loaded</span>';
+				} else {
+					statusHtml += '<span style="color: red;">✗ Not loaded</span>';
+				}
+				statusHtml += '</td><td style="padding: 5px;">' + (result.ipv4_update_time || '-') + '</td></tr>';
+				
+				// IPv6 状态
+				statusHtml += '<tr><td style="padding: 5px;">IPv6 List</td><td style="padding: 5px;">';
+				if (result.ipv6_loaded) {
+					statusHtml += '<span style="color: green;">✓ Loaded</span>';
+				} else {
+					statusHtml += '<span style="color: orange;">⚠ Optional</span>';
+				}
+				statusHtml += '</td><td style="padding: 5px;">' + (result.ipv6_update_time || '-') + '</td></tr>';
+				statusHtml += '</table>';
+				
+				document.getElementById('iplist_status').innerHTML = statusHtml;
+			}
+		);
+	}
+	
+	// 每30秒更新一次
+	XHR.poll(30, '<%=luci.dispatcher.build_url("admin", "services", "ech-workers", "status")%>', null,
+		function(x, result) {
+			var statusHtml = '<table style="width: 100%; border-collapse: collapse;">';
+			statusHtml += '<tr><th style="text-align: left; padding: 5px;">Type</th><th style="text-align: left; padding: 5px;">Status</th><th style="text-align: left; padding: 5px;">Last Update</th></tr>';
+			
+			statusHtml += '<tr><td style="padding: 5px;">IPv4 List</td><td style="padding: 5px;">';
+			if (result.ipv4_loaded) {
+				statusHtml += '<span style="color: green;">✓ Loaded</span>';
+			} else {
+				statusHtml += '<span style="color: red;">✗ Not loaded</span>';
+			}
+			statusHtml += '</td><td style="padding: 5px;">' + (result.ipv4_update_time || '-') + '</td></tr>';
+			
+			statusHtml += '<tr><td style="padding: 5px;">IPv6 List</td><td style="padding: 5px;">';
+			if (result.ipv6_loaded) {
+				statusHtml += '<span style="color: green;">✓ Loaded</span>';
+			} else {
+				statusHtml += '<span style="color: orange;">⚠ Optional</span>';
+			}
+			statusHtml += '</td><td style="padding: 5px;">' + (result.ipv6_update_time || '-') + '</td></tr>';
+			statusHtml += '</table>';
+			
+			document.getElementById('iplist_status').innerHTML = statusHtml;
+		}
+	);
+</script>
+
+<div id="iplist_status"><%:Checking...%></div>
+
+<%+cbi/valuefooter%>

@@ -1,0 +1,106 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2025 ECH-Workers
+
+START=99
+STOP=10
+
+USE_PROCD=1
+
+PROG=/usr/bin/ech-workers
+CONF_DIR=/etc/ech-workers
+PID_FILE=/var/run/ech-workers.pid
+
+start_service() {
+	config_load ech-workers
+	
+	local enabled
+	config_get_bool enabled main enabled 0
+	[ "$enabled" -eq 0 ] && return 0
+	
+	local listen_addr
+	local server_addr
+	local server_ip
+	local token
+	local dns_server
+	local ech_domain
+	local routing_mode
+	
+	config_get listen_addr main listen_addr "0.0.0.0:1080"
+	config_get server_addr main server_addr ""
+	config_get server_ip main server_ip ""
+	config_get token main token ""
+	config_get dns_server main dns_server "dns.alidns.com/dns-query"
+	config_get ech_domain main ech_domain "cloudflare-ech.com"
+	config_get routing_mode main routing_mode "global"
+	
+	[ -z "$server_addr" ] && {
+		logger -t ech-workers "Error: server_addr is not configured"
+		return 1
+	}
+	
+	# 确保 IP 列表文件存在
+	mkdir -p "$CONF_DIR"
+	
+	# 检查是否需要下载 IP 列表
+	if [ "$routing_mode" = "bypass_cn" ]; then
+		if [ ! -f "$CONF_DIR/chn_ip.txt" ] || [ ! -s "$CONF_DIR/chn_ip.txt" ]; then
+			logger -t ech-workers "Downloading China IP list..."
+			download_china_ip_list
+		fi
+	fi
+	
+	procd_open_instance
+	procd_set_param command "$PROG" \
+		-l "$listen_addr" \
+		-f "$server_addr" \
+		${server_ip:+-ip "$server_ip"} \
+		${token:+-token "$token"} \
+		-dns "$dns_server" \
+		-ech "$ech_domain" \
+		-routing "$routing_mode"
+	
+	procd_set_param respawn ${respawn_threshold:-3600} ${respawn_timeout:-5} ${respawn_retry:-5}
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_set_param pidfile "$PID_FILE"
+	
+	procd_close_instance
+	
+	logger -t ech-workers "Started with routing mode: $routing_mode"
+}
+
+stop_service() {
+	logger -t ech-workers "Stopping service"
+}
+
+service_triggers() {
+	procd_add_reload_trigger "ech-workers"
+}
+
+reload_service() {
+	stop
+	start
+}
+
+download_china_ip_list() {
+	local ipv4_url="https://raw.githubusercontent.com/mayaxcn/china-ip-list/refs/heads/master/chn_ip.txt"
+	local ipv6_url="https://raw.githubusercontent.com/mayaxcn/china-ip-list/refs/heads/master/chn_ip_v6.txt"
+	
+	# 下载 IPv4 列表
+	if wget -q -O "$CONF_DIR/chn_ip.txt.tmp" "$ipv4_url" 2>/dev/null; then
+		mv "$CONF_DIR/chn_ip.txt.tmp" "$CONF_DIR/chn_ip.txt"
+		logger -t ech-workers "Downloaded IPv4 China IP list"
+	else
+		logger -t ech-workers "Failed to download IPv4 China IP list"
+		rm -f "$CONF_DIR/chn_ip.txt.tmp"
+	fi
+	
+	# 下载 IPv6 列表
+	if wget -q -O "$CONF_DIR/chn_ip_v6.txt.tmp" "$ipv6_url" 2>/dev/null; then
+		mv "$CONF_DIR/chn_ip_v6.txt.tmp" "$CONF_DIR/chn_ip_v6.txt"
+		logger -t ech-workers "Downloaded IPv6 China IP list"
+	else
+		logger -t ech-workers "Failed to download IPv6 China IP list"
+		rm -f "$CONF_DIR/chn_ip_v6.txt.tmp"
+	fi
+}

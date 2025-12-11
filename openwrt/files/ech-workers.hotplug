@@ -1,0 +1,16 @@
+#!/bin/sh
+# Hotplug script for ech-workers
+# Restart service when network interface changes
+
+[ "$ACTION" = "ifup" ] || exit 0
+
+. /lib/functions.sh
+
+config_load ech-workers
+
+local enabled
+config_get_bool enabled main enabled 0
+
+[ "$enabled" -eq 1 ] && {
+	/etc/init.d/ech-workers restart
+}

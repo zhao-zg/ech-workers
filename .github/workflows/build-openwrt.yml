@@ -1,0 +1,98 @@
+name: Build OpenWrt Package
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - arch: x86_64
+            sdk_url: https://downloads.openwrt.org/releases/23.05.5/targets/x86/64/openwrt-sdk-23.05.5-x86-64_gcc-12.3.0_musl.Linux-x86_64.tar.xz
+          - arch: aarch64_generic
+            sdk_url: https://downloads.openwrt.org/releases/23.05.5/targets/armsr/armv8/openwrt-sdk-23.05.5-armsr-armv8_gcc-12.3.0_musl.Linux-x86_64.tar.xz
+          - arch: mipsel_24kc
+            sdk_url: https://downloads.openwrt.org/releases/23.05.5/targets/ramips/mt7621/openwrt-sdk-23.05.5-ramips-mt7621_gcc-12.3.0_musl.Linux-x86_64.tar.xz
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libncurses5-dev gawk git \
+          libssl-dev gettext zlib1g-dev swig unzip time rsync python3 \
+          python3-setuptools python3-yaml
+    
+    - name: Download OpenWrt SDK
+      run: |
+        wget -q ${{ matrix.target.sdk_url }}
+        tar -xf *.tar.xz
+        rm *.tar.xz
+        mv openwrt-sdk-* openwrt-sdk
+    
+    - name: Update feeds
+      working-directory: ./openwrt-sdk
+      run: |
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+    
+    - name: Copy package files
+      run: |
+        mkdir -p openwrt-sdk/package/ech-workers
+        cp -r openwrt/* openwrt-sdk/package/ech-workers/
+        
+        # Copy Go source
+        mkdir -p openwrt-sdk/package/ech-workers/cmd/ech-workers
+        cp -r tunnel/* openwrt-sdk/package/ech-workers/cmd/ech-workers/
+    
+    - name: Configure package
+      working-directory: ./openwrt-sdk
+      run: |
+        make defconfig
+        make package/ech-workers/compile V=s
+        make package/luci-app-ech-workers/compile V=s
+    
+    - name: Find packages
+      id: find_packages
+      working-directory: ./openwrt-sdk
+      run: |
+        PKG_PATH=$(find bin/packages -name "ech-workers_*.ipk" -o -name "luci-app-ech-workers_*.ipk")
+        echo "packages=$PKG_PATH" >> $GITHUB_OUTPUT
+        echo "Found packages:"
+        echo "$PKG_PATH"
+    
+    - name: Upload IPK artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ech-workers-openwrt-${{ matrix.target.arch }}
+        path: |
+          openwrt-sdk/bin/packages/*/base/ech-workers_*.ipk
+          openwrt-sdk/bin/packages/*/base/luci-app-ech-workers_*.ipk
+        retention-days: 30
+    
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          openwrt-sdk/bin/packages/*/base/ech-workers_*.ipk
+          openwrt-sdk/bin/packages/*/base/luci-app-ech-workers_*.ipk
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

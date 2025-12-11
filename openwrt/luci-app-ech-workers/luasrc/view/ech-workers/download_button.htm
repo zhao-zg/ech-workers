@@ -1,0 +1,29 @@
+<%+cbi/valueheader%>
+
+<script type="text/javascript">
+	function downloadIPList() {
+		var btn = document.getElementById('download_btn');
+		btn.disabled = true;
+		btn.value = '<%:Downloading...%>';
+		
+		XHR.get('<%=luci.dispatcher.build_url("admin", "services", "ech-workers", "download_iplist")%>', null,
+			function(x, result) {
+				if (result.success) {
+					alert('<%:IP list downloaded successfully%>');
+				} else {
+					alert('<%:Failed to download IP list%>: ' + result.message);
+				}
+				
+				btn.disabled = false;
+				btn.value = '<%:Download Now%>';
+				
+				// 刷新状态
+				location.reload();
+			}
+		);
+	}
+</script>
+
+<input type="button" id="download_btn" class="cbi-button cbi-button-apply" value="<%:Download Now%>" onclick="downloadIPList()" />
+
+<%+cbi/valuefooter%>

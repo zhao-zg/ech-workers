@@ -1,0 +1,46 @@
+<%+cbi/valueheader%>
+
+<script type="text/javascript">
+	function updateStatus() {
+		XHR.get('<%=luci.dispatcher.build_url("admin", "services", "ech-workers", "status")%>', null,
+			function(x, result) {
+				var statusText = '';
+				var statusColor = '';
+				
+				if (result.running) {
+					statusText = '<%:Running%>';
+					statusColor = 'green';
+				} else {
+					statusText = '<%:Not running%>';
+					statusColor = 'red';
+				}
+				
+				var statusHtml = '<span style="color: ' + statusColor + '; font-weight: bold;">' + statusText + '</span>';
+				document.getElementById('service_status').innerHTML = statusHtml;
+			}
+		);
+	}
+	
+	// 页面加载时更新状态
+	XHR.poll(5, '<%=luci.dispatcher.build_url("admin", "services", "ech-workers", "status")%>', null,
+		function(x, result) {
+			var statusText = '';
+			var statusColor = '';
+			
+			if (result.running) {
+				statusText = '<%:Running%>';
+				statusColor = 'green';
+			} else {
+				statusText = '<%:Not running%>';
+				statusColor = 'red';
+			}
+			
+			var statusHtml = '<span style="color: ' + statusColor + '; font-weight: bold;">' + statusText + '</span>';
+			document.getElementById('service_status').innerHTML = statusHtml;
+		}
+	);
+</script>
+
+<div id="service_status"><%:Checking...%></div>
+
+<%+cbi/valuefooter%>
