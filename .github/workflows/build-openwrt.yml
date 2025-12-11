@@ -104,16 +104,38 @@ jobs:
       working-directory: ./openwrt-sdk
       run: |
         # Build ech-workers package
-        make package/ech-workers/compile V=s -j1
+        echo "Building ech-workers package..."
+        make package/ech-workers/compile V=s -j1 || {
+          echo "Failed to build ech-workers package"
+          exit 1
+        }
         
         # Build luci-app package
-        make package/luci-app-ech-workers/compile V=s -j1
+        echo "Building luci-app-ech-workers package..."
+        make package/luci-app-ech-workers/compile V=s -j1 || {
+          echo "Failed to build luci-app-ech-workers package"
+          exit 1
+        }
+        
+        # List built packages
+        echo "Listing built packages..."
+        find bin/ -name "*.ipk" -ls || echo "No IPK files found"
     
     - name: Find packages
       id: find_packages
       working-directory: ./openwrt-sdk
       run: |
-        PKG_PATH=$(find bin/packages -name "ech-workers_*.ipk" -o -name "luci-app-ech-workers_*.ipk")
+        # Find all built IPK packages
+        if [ -d "bin/packages" ]; then
+          PKG_PATH=$(find bin/packages -name "ech-workers_*.ipk" -o -name "luci-app-ech-workers_*.ipk")
+        elif [ -d "bin/targets" ]; then
+          PKG_PATH=$(find bin/targets -name "ech-workers_*.ipk" -o -name "luci-app-ech-workers_*.ipk")
+        else
+          echo "Error: Neither bin/packages nor bin/targets directory found"
+          ls -la bin/ || echo "bin/ directory does not exist"
+          exit 1
+        fi
+        
         echo "packages=$PKG_PATH" >> $GITHUB_OUTPUT
         echo "Found packages:"
         echo "$PKG_PATH"
