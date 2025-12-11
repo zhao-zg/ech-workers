@@ -3,6 +3,23 @@ const encoder = new TextEncoder();
 
 import { connect } from 'cloudflare:sockets';
 
+/**
+ * ECH-Workers WebSocket Proxy Server
+ * 
+ * 环境变量:
+ * - TOKEN: 可选，客户端认证令牌
+ * - FALLBACK_HOSTS: 可选，备用连接IP列表，逗号分隔，默认为 2a00:1098:2b::1:6815:5881
+ * 
+ * 客户端协议:
+ * - CONNECT:addr|data#proxyIP - 连接目标，可选携带初始数据和ProxyIP
+ *   - addr: 目标地址（支持 [IPv6]:port 或 host:port 格式）
+ *   - data: 可选，连接后立即发送的数据
+ *   - proxyIP: 可选，客户端指定的代理IP，优先使用此IP连接目标
+ * - DATA:text - 发送文本数据
+ * - Binary data - 发送二进制数据
+ * - CLOSE - 关闭连接
+ */
+
 export default {
   async fetch(req, env) {
     const token = env.TOKEN || '';
@@ -56,7 +73,7 @@ async function handleConn(ws, fallbackHosts) {
     !closed && cleanup();
   };
 
-  const connectRemote = async (addr, data) => {
+  const connectRemote = async (addr, data, proxyIP) => {
     // 支持 [IPv6]:port 或 host:port 格式
     let host, port;
     if (addr.startsWith('[')) {
@@ -73,7 +90,8 @@ async function handleConn(ws, fallbackHosts) {
     port = parseInt(port, 10);
     if (!port || port < 1 || port > 65535) throw new Error('Invalid port');
 
-    const hosts = [host, ...fallbackHosts];
+    // 如果客户端传入了proxyIP，优先使用proxyIP，否则使用原始host和fallbackHosts
+    const hosts = proxyIP ? [proxyIP] : [host, ...fallbackHosts];
     
     for (const h of hosts) {
       try {
@@ -101,10 +119,25 @@ async function handleConn(ws, fallbackHosts) {
       if (typeof data === 'string') {
         if (data.startsWith('CONNECT:')) {
           const payload = data.slice(8);
+          // 格式: CONNECT:addr|extra#proxyIP 或 CONNECT:addr|extra 或 CONNECT:addr#proxyIP
+          const proxyIPIndex = payload.indexOf('#');
           const pipeIndex = payload.indexOf('|');
-          const addr = pipeIndex === -1 ? payload : payload.slice(0, pipeIndex);
-          const extra = pipeIndex === -1 ? '' : payload.slice(pipeIndex + 1);
-          await connectRemote(addr, extra);
+          
+          let addr, extra, proxyIP;
+          if (proxyIPIndex !== -1) {
+            // 有proxyIP
+            const beforeProxyIP = payload.slice(0, proxyIPIndex);
+            proxyIP = payload.slice(proxyIPIndex + 1);
+            const pipe = beforeProxyIP.indexOf('|');
+            addr = pipe === -1 ? beforeProxyIP : beforeProxyIP.slice(0, pipe);
+            extra = pipe === -1 ? '' : beforeProxyIP.slice(pipe + 1);
+          } else {
+            // 没有proxyIP，使用原逻辑
+            addr = pipeIndex === -1 ? payload : payload.slice(0, pipeIndex);
+            extra = pipeIndex === -1 ? '' : payload.slice(pipeIndex + 1);
+            proxyIP = '';
+          }
+          await connectRemote(addr, extra, proxyIP);
         } else if (data.startsWith('DATA:')) {
           writer?.write(encoder.encode(data.slice(5)));
         } else if (data === 'CLOSE') cleanup();

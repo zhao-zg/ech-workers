@@ -16,6 +16,7 @@ var (
 	listenAddr  string
 	serverAddr  string
 	serverIP    string
+	proxyIP     string
 	token       string
 	dnsServer   string
 	echDomain   string
@@ -26,6 +27,7 @@ func init() {
 	flag.StringVar(&listenAddr, "l", "0.0.0.0:1080", "代理监听地址 (支持 SOCKS5 和 HTTP)")
 	flag.StringVar(&serverAddr, "f", "", "服务端地址 (格式: x.x.workers.dev:443)")
 	flag.StringVar(&serverIP, "ip", "", "优选IP（域名）- 指定服务端 IP 或域名以绕过 DNS 解析")
+	flag.StringVar(&proxyIP, "proxy", "", "反代IP - 传递给Workers用于连接真实目标")
 	flag.StringVar(&token, "token", "", "身份验证令牌")
 	flag.StringVar(&dnsServer, "dns", "dns.alidns.com/dns-query", "ECH 查询 DoH 服务器")
 	flag.StringVar(&echDomain, "ech", "cloudflare-ech.com", "ECH 查询域名")
@@ -45,6 +47,9 @@ func main() {
 	if serverIP != "" {
 		log.Printf("[启动] 优选IP（域名）: %s", serverIP)
 	}
+	if proxyIP != "" {
+		log.Printf("[启动] 反代IP: %s", proxyIP)
+	}
 	log.Printf("[启动] 分流模式: %s", routingMode)
 
 	// 设置分流模式
@@ -58,7 +63,7 @@ func main() {
 	}
 
 	// 启动代理服务
-	if err := tunnel.StartSocksProxy(listenAddr, serverAddr, dnsServer, echDomain, serverIP, token); err != nil {
+	if err := tunnel.StartSocksProxy(listenAddr, serverAddr, dnsServer, echDomain, serverIP, proxyIP, token); err != nil {
 		log.Fatalf("[启动] 启动失败: %v", err)
 	}
 

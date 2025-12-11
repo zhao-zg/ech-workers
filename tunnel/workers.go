@@ -28,7 +28,8 @@ import (
 var (
 	listenAddr  string
 	serverAddr  string
-	serverIP    string
+	serverIP    string  // 优选IP，用于连接Workers服务器
+	proxyIP     string  // 反代IP，传递给Workers用于连接真实目标
 	token       string
 	dnsServer   string
 	echDomain   string
@@ -61,7 +62,9 @@ type ipRangeV6 struct {
 }
 
 // StartSocksProxy 启动 SOCKS5/HTTP 代理，供 Android 调用
-func StartSocksProxy(host, wsServer, dns, ech, ip, tkn string) error {
+// ip: 优选IP，用于客户端连接Workers
+// proxy: 反代IP，传递给Workers用于连接真实目标
+func StartSocksProxy(host, wsServer, dns, ech, ip, proxy, tkn string) error {
 	if wsServer == "" {
 		return fmt.Errorf("缺少 wss 服务地址")
 	}
@@ -69,6 +72,7 @@ func StartSocksProxy(host, wsServer, dns, ech, ip, tkn string) error {
 	listenAddr = host
 	serverAddr = wsServer
 	serverIP = ip
+	proxyIP = proxy
 	token = tkn
 
 	dnsServer = dns
@@ -1246,8 +1250,13 @@ func handleTunnel(conn net.Conn, target, clientAddr string, mode int, firstFrame
 		}
 	}
 
-	// 发送连接请求
-	connectMsg := fmt.Sprintf("CONNECT:%s|%s", target, firstFrame)
+	// 发送连接请求，如果设置了proxyIP，则传递给服务端用于反代连接
+	var connectMsg string
+	if proxyIP != "" {
+		connectMsg = fmt.Sprintf("CONNECT:%s|%s#%s", target, firstFrame, proxyIP)
+	} else {
+		connectMsg = fmt.Sprintf("CONNECT:%s|%s", target, firstFrame)
+	}
 	mu.Lock()
 	err = wsConn.WriteMessage(websocket.TextMessage, []byte(connectMsg))
 	mu.Unlock()
