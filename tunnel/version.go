@@ -11,7 +11,7 @@ import (
 
 const (
 	// 当前版本
-	Version = "v1.0.8"
+	Version = "v1.0.10"
 	
 	// GitHub Release API
 	githubAPIURL = "https://api.github.com/repos/zhao-zg/ech-workers/releases/latest"
