@@ -227,7 +227,7 @@ public class TProxyService extends VpnService {
                                         wsAddr = wsAddr + "/";
                                 }
                         }
-                        Tunnel.startSocksProxy(
+                        Mobile.startSocksProxy(
                                 prefs.getSocksAddress() + ":" + Integer.toString(prefs.getSocksPort()),
                                 wsAddr,
                                 prefs.getEchDns(),
