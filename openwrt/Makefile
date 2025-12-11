@@ -49,8 +49,10 @@ endef
 define Package/ech-workers/postinst
 #!/bin/sh
 [ -n "$${IPKG_INSTROOT}" ] || {
-	# 清理可能存在的旧防火墙规则
-	/etc/init.d/ech-workers stop 2>/dev/null
+	# 如果服务正在运行,先停止(这会清理防火墙规则)
+	if /etc/init.d/ech-workers running 2>/dev/null; then
+		/etc/init.d/ech-workers stop 2>/dev/null
+	fi
 	
 	# 如果存在-opkg备份文件，说明配置文件有冲突
 	if [ -f /etc/config/ech-workers-opkg ]; then

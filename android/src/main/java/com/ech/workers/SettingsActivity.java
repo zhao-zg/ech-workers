@@ -156,6 +156,13 @@ public class SettingsActivity extends Activity {
             getString(R.string.optional)
         ));
         
+        itemFallbackHosts.setOnClickListener(v -> showEditDialog(
+            getString(R.string.fallback_hosts),
+            valueFallbackHosts.getText().toString(),
+            "fallback_hosts",
+            getString(R.string.fallback_hosts_hint)
+        ));
+        
         itemRoutingMode.setOnClickListener(v -> showRoutingModeDialog());
     }
 

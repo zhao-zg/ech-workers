@@ -38,19 +38,20 @@ setup_firewall() {
 	
 	# bypass_cn模式：加载ipset并跳过中国IP
 	if [ "$routing_mode" = "bypass_cn" ]; then
-		# 创建ipset（如果不存在）
-		ipset list "$IPSET_CHN" >/dev/null 2>&1 || {
-			ipset create "$IPSET_CHN" hash:net family inet
-			logger -t ech-workers "Created ipset: $IPSET_CHN"
-		}
-		
-		# 加载中国IP列表到ipset
+		# 加载中国IP列表到ipset（使用批量导入方式）
 		if [ -f "$CONF_DIR/chn_ip.txt" ]; then
-			ipset flush "$IPSET_CHN"
-			while read -r ip; do
-				[ -n "$ip" ] && ipset add "$IPSET_CHN" "$ip" 2>/dev/null
-			done < "$CONF_DIR/chn_ip.txt"
-			logger -t ech-workers "Loaded China IPv4 list to ipset"
+			# 创建临时restore文件
+			{
+				echo "create $IPSET_CHN hash:net -exist"
+				echo "flush $IPSET_CHN"
+				while read -r ip; do
+					[ -n "$ip" ] && echo "add $IPSET_CHN $ip"
+				done < "$CONF_DIR/chn_ip.txt"
+			} | ipset restore
+			logger -t ech-workers "Loaded China IPv4 list to ipset (batch mode)"
+		else
+			# 没有IP列表文件，创建空ipset
+			ipset create "$IPSET_CHN" hash:net -exist 2>/dev/null
 		fi
 		
 		# 跳过中国IP
@@ -85,19 +86,20 @@ setup_firewall() {
 	
 	# bypass_cn模式：加载IPv6 ipset并跳过中国IP
 	if [ "$routing_mode" = "bypass_cn" ]; then
-		# 创建IPv6 ipset（如果不存在）
-		ipset list "$IPSET_CHN_V6" >/dev/null 2>&1 || {
-			ipset create "$IPSET_CHN_V6" hash:net family inet6
-			logger -t ech-workers "Created ipset: $IPSET_CHN_V6"
-		}
-		
-		# 加载中国IPv6列表到ipset
+		# 加载中国IPv6列表到ipset（使用批量导入方式）
 		if [ -f "$CONF_DIR/chn_ip_v6.txt" ]; then
-			ipset flush "$IPSET_CHN_V6"
-			while read -r ip; do
-				[ -n "$ip" ] && ipset add "$IPSET_CHN_V6" "$ip" 2>/dev/null
-			done < "$CONF_DIR/chn_ip_v6.txt"
-			logger -t ech-workers "Loaded China IPv6 list to ipset"
+			# 创建临时restore文件
+			{
+				echo "create $IPSET_CHN_V6 hash:net family inet6 -exist"
+				echo "flush $IPSET_CHN_V6"
+				while read -r ip; do
+					[ -n "$ip" ] && echo "add $IPSET_CHN_V6 $ip"
+				done < "$CONF_DIR/chn_ip_v6.txt"
+			} | ipset restore
+			logger -t ech-workers "Loaded China IPv6 list to ipset (batch mode)"
+		else
+			# 没有IP列表文件，创建空ipset
+			ipset create "$IPSET_CHN_V6" hash:net family inet6 -exist 2>/dev/null
 		fi
 		
 		# 跳过中国IPv6
@@ -131,13 +133,11 @@ cleanup_firewall() {
 	ip6tables -t nat -F ECH_WORKERS 2>/dev/null
 	ip6tables -t nat -X ECH_WORKERS 2>/dev/null
 	
-	# 清理ipset (IPv4和IPv6)
-	ipset flush "$IPSET_CHN" 2>/dev/null
+	# 快速清理ipset (直接destroy比先flush再destroy快)
 	ipset destroy "$IPSET_CHN" 2>/dev/null
-	ipset flush "$IPSET_CHN_V6" 2>/dev/null
 	ipset destroy "$IPSET_CHN_V6" 2>/dev/null
 	
-	logger -t ech-workers "Firewall rules cleaned up (IPv4 + IPv6)"
+	logger -t ech-workers "Firewall rules cleaned up"
 }
 
 start_service() {
