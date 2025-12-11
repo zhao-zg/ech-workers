@@ -78,18 +78,18 @@ jobs:
       with:
         gradle-version: 8.5
     
-    - name: Build APK
+    - name: Build APK (Debug)
       working-directory: ./android
       run: |
         chmod +x gradlew
         ./gradlew clean
-        gradle assembleRelease --stacktrace
+        ./gradlew assembleDebug --stacktrace
     
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: android-apk
-        path: android/build/outputs/apk/release/*.apk
+        path: android/build/outputs/apk/debug/*.apk
 
   build-openwrt:
     runs-on: ubuntu-latest
