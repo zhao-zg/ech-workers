@@ -58,3 +58,41 @@ func (p *Proxy) LoadChinaIPList(ipv4Data, ipv6Data string) string {
 func (p *Proxy) IsRunning() bool {
 	return p.running
 }
+
+// Package-level functions for static usage in Java
+
+// StartSocksProxy starts the SOCKS proxy (static version)
+// Returns empty string on success, error message on failure
+func StartSocksProxy(host, wsServer, dns, ech, ip, token string) string {
+	err := tunnel.StartSocksProxy(host, wsServer, dns, ech, ip, token)
+	if err != nil {
+		return err.Error()
+	}
+	return ""
+}
+
+// StopSocksProxy stops the proxy (static version)
+func StopSocksProxy() {
+	tunnel.StopSocksProxy()
+}
+
+// SetRoutingMode sets the routing mode (static version)
+// mode: "global", "bypass_cn", or "none"
+func SetRoutingMode(mode string) {
+	tunnel.SetRoutingMode(mode)
+}
+
+// GetRoutingMode gets current routing mode (static version)
+func GetRoutingMode() string {
+	return tunnel.GetRoutingMode()
+}
+
+// LoadChinaIPList loads China IP list (static version)
+// Returns empty string on success, error message on failure
+func LoadChinaIPList(ipv4Data, ipv6Data string) string {
+	err := tunnel.LoadChinaIPList(ipv4Data, ipv6Data)
+	if err != nil {
+		return err.Error()
+	}
+	return ""
+}

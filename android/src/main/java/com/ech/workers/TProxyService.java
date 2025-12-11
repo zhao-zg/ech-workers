@@ -24,7 +24,7 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.net.VpnService;
 import android.util.Log;
-import com.ech.workers.tunnel.Tunnel;
+import mobile.Mobile;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.ServiceInfo;
 
@@ -76,7 +76,7 @@ public class TProxyService extends VpnService {
 		// 加载分流模式
 		String routingMode = prefs.getRoutingMode();
 		try {
-			Tunnel.setRoutingMode(routingMode);
+			Mobile.setRoutingMode(routingMode);
 			Log.i("TProxyService", "分流模式: " + routingMode);
 		} catch (Exception e) {
 			Log.e("TProxyService", "设置分流模式失败", e);
@@ -250,7 +250,7 @@ public class TProxyService extends VpnService {
 
     public void stopService() {
         try { stopForeground(true); } catch (Throwable t) { }
-        try { Tunnel.stopSocksProxy(); } catch (Exception e) { }
+        try { Mobile.stopSocksProxy(); } catch (Exception e) { }
         try { TProxyStopService(); } catch (Throwable t) { }
         if (tunFd != null) {
             try { tunFd.close(); } catch (IOException e) {}

@@ -10,7 +10,7 @@ package com.ech.workers;
 
 import android.content.Context;
 import android.util.Log;
-import com.ech.workers.tunnel.Tunnel;
+import mobile.Mobile;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -218,7 +218,7 @@ public class ChinaIpListManager {
             Log.i(TAG, "IPv6 数据长度: " + ipv6Data.length());
             
             // 调用 Go 层的加载函数
-            Tunnel.loadChinaIPList(ipv4Data, ipv6Data);
+            Mobile.loadChinaIPList(ipv4Data, ipv6Data);
             
             return true;
             
