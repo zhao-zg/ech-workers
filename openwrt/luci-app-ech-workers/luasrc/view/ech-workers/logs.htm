@@ -1,0 +1,155 @@
+<%+cbi/valueheader%>
+
+<style>
+.log-container {
+	margin: 10px 0;
+}
+.log-controls {
+	margin-bottom: 10px;
+}
+.log-button {
+	display: inline-block;
+	margin: 5px;
+	padding: 8px 16px;
+	background-color: #2196F3;
+	color: white;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 14px;
+}
+.log-button:hover {
+	background-color: #1976D2;
+}
+.log-button.refresh {
+	background-color: #4CAF50;
+}
+.log-button.refresh:hover {
+	background-color: #388E3C;
+}
+.log-button.clear {
+	background-color: #F44336;
+}
+.log-button.clear:hover {
+	background-color: #D32F2F;
+}
+.log-box {
+	width: 100%;
+	height: 400px;
+	padding: 10px;
+	font-family: 'Courier New', monospace;
+	font-size: 12px;
+	background-color: #1e1e1e;
+	color: #d4d4d4;
+	border: 1px solid #555;
+	border-radius: 4px;
+	overflow-y: auto;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+}
+.log-info {
+	color: #666;
+	font-size: 13px;
+	margin-bottom: 5px;
+}
+select.log-lines {
+	padding: 6px;
+	margin-left: 10px;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+}
+</style>
+
+<script type="text/javascript">
+var autoRefreshTimer = null;
+
+function loadLogs() {
+	var lines = document.getElementById('log_lines_select').value;
+	var logBox = document.getElementById('log_content');
+	
+	logBox.textContent = '<%:Loading logs...%>';
+	
+	XHR.get('<%=luci.dispatcher.build_url("admin", "services", "ech-workers", "get_logs")%>', 
+		{lines: lines},
+		function(x, result) {
+			if (result.success) {
+				logBox.textContent = result.logs;
+				// 自动滚动到底部
+				logBox.scrollTop = logBox.scrollHeight;
+			} else {
+				logBox.textContent = 'Error loading logs';
+			}
+		}
+	);
+}
+
+function clearLogs() {
+	if (confirm('<%:Clear all logs? This will clear the system log buffer.%>')) {
+		var logBox = document.getElementById('log_content');
+		logBox.textContent = '<%:Clearing logs...%>';
+		
+		XHR.get('<%=luci.dispatcher.build_url("admin", "system")%>/exec', 
+			{command: 'logread -c'},
+			function(x) {
+				setTimeout(loadLogs, 500);
+			}
+		);
+	}
+}
+
+function toggleAutoRefresh() {
+	var button = document.getElementById('btn_auto_refresh');
+	if (autoRefreshTimer) {
+		clearInterval(autoRefreshTimer);
+		autoRefreshTimer = null;
+		button.textContent = '<%:Auto Refresh: OFF%>';
+		button.style.backgroundColor = '#9E9E9E';
+	} else {
+		autoRefreshTimer = setInterval(loadLogs, 3000);
+		button.textContent = '<%:Auto Refresh: ON%>';
+		button.style.backgroundColor = '#FF9800';
+		loadLogs();
+	}
+}
+
+// 页面加载时自动加载日志
+window.addEventListener('load', function() {
+	loadLogs();
+});
+</script>
+
+<div class="log-container">
+	<div class="log-info">
+		<%:System logs filtered for ech-workers service. Logs are stored in system log buffer.%>
+	</div>
+	
+	<div class="log-controls">
+		<button id="btn_refresh" class="log-button refresh" onclick="loadLogs()">
+			<%:Refresh Logs%>
+		</button>
+		<button id="btn_auto_refresh" class="log-button" onclick="toggleAutoRefresh()" style="background-color: #9E9E9E;">
+			<%:Auto Refresh: OFF%>
+		</button>
+		<button class="log-button clear" onclick="clearLogs()">
+			<%:Clear Logs%>
+		</button>
+		
+		<label style="margin-left: 15px;">
+			<%:Show last%>:
+			<select id="log_lines_select" class="log-lines" onchange="loadLogs()">
+				<option value="50">50</option>
+				<option value="100" selected>100</option>
+				<option value="200">200</option>
+				<option value="500">500</option>
+				<option value="1000">1000</option>
+			</select>
+			<%:lines%>
+		</label>
+	</div>
+	
+	<div id="log_content" class="log-box">
+		<%:Loading logs...%>
+	</div>
+</div>
+
+<%+cbi/valuefooter%>

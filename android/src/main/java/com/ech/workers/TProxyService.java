@@ -141,26 +141,15 @@ public class TProxyService extends VpnService {
 		if (prefs.getRemoteDns()) {
 			builder.addDnsServer(prefs.getMappedDns());
 		}
-		boolean disallowSelf = true;
-		if (prefs.getGlobal()) {
-			session += "/Global";
-		} else {
-			for (String appName : prefs.getApps()) {
-				try {
-					builder.addAllowedApplication(appName);
-					disallowSelf = false;
-				} catch (NameNotFoundException e) {
-				}
-			}
-			session += "/per-App";
+		
+		// 始终使用全局VPN模式，由分流模式控制流量走向
+		session += "/" + prefs.getRoutingMode();
+		String selfName = getApplicationContext().getPackageName();
+		try {
+			builder.addDisallowedApplication(selfName);
+		} catch (NameNotFoundException e) {
 		}
-		if (disallowSelf) {
-			String selfName = getApplicationContext().getPackageName();
-			try {
-				builder.addDisallowedApplication(selfName);
-			} catch (NameNotFoundException e) {
-			}
-		}
+		
 		builder.setSession(session);
         try {
             tunFd = builder.establish();

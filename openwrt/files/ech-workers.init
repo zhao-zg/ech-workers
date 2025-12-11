@@ -25,9 +25,9 @@ start_service() {
 	local ech_domain
 	local routing_mode
 	
-	config_get listen_addr main listen_addr "0.0.0.0:1080"
+	config_get listen_addr main listen_addr "0.0.0.0:20001"
 	config_get server_addr main server_addr ""
-	config_get server_ip main server_ip ""
+	config_get server_ip main server_ip "mfa.gov.ua"
 	config_get token main token ""
 	config_get dns_server main dns_server "dns.alidns.com/dns-query"
 	config_get ech_domain main ech_domain "cloudflare-ech.com"

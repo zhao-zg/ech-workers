@@ -175,6 +175,42 @@ msgstr "HTTP 状态"
 msgid "Please enable and start the service before testing"
 msgstr "测试前请先启用并启动服务"
 
+msgid "Service Logs"
+msgstr "服务日志"
+
+msgid "View real-time service logs for troubleshooting and monitoring"
+msgstr "查看实时服务日志以便故障排除和监控"
+
+msgid "Log Viewer"
+msgstr "日志查看器"
+
+msgid "Loading logs..."
+msgstr "加载日志中..."
+
+msgid "Refresh Logs"
+msgstr "刷新日志"
+
+msgid "Auto Refresh: OFF"
+msgstr "自动刷新：关闭"
+
+msgid "Auto Refresh: ON"
+msgstr "自动刷新：开启"
+
+msgid "Clear Logs"
+msgstr "清除日志"
+
+msgid "Clear all logs? This will clear the system log buffer."
+msgstr "清除所有日志？这将清除系统日志缓冲区。"
+
+msgid "Clearing logs..."
+msgstr "正在清除日志..."
+
+msgid "Show last"
+msgstr "显示最后"
+
+msgid "System logs filtered for ech-workers service. Logs are stored in system log buffer."
+msgstr "系统日志已过滤ech-workers服务相关内容。日志存储在系统日志缓冲区中。"
+
 msgid "PID"
 msgstr "进程ID"
 

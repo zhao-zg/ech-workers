@@ -45,9 +45,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private EditText edittext_pref_ip;
     private EditText edittext_token;
     private Spinner spinner_routing_mode;
-    private CheckBox checkbox_global;
     // IPv4/IPv6 默认启用，不在 UI 展示
-    private Button button_apps;
     private Button button_control;
 
 	@Override
@@ -70,16 +68,12 @@ public class MainActivity extends Activity implements View.OnClickListener {
         edittext_pref_ip = (EditText) findViewById(R.id.pref_ip);
         edittext_token = (EditText) findViewById(R.id.token);
         spinner_routing_mode = (Spinner) findViewById(R.id.routing_mode_spinner);
-        checkbox_global = (CheckBox) findViewById(R.id.global);
-        button_apps = (Button) findViewById(R.id.apps);
         button_control = (Button) findViewById(R.id.control);
 
         btn_add_profile.setOnClickListener(this);
         btn_save_profile.setOnClickListener(this);
         btn_rename_profile.setOnClickListener(this);
         btn_delete_profile.setOnClickListener(this);
-        checkbox_global.setOnClickListener(this);
-        button_apps.setOnClickListener(this);
         button_control.setOnClickListener(this);
         
         initRoutingModeSpinner();
@@ -301,12 +295,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 	@Override
 	public void onClick(View view) {
-        if (view == checkbox_global) {
-            savePrefs();
-            updateUI();
-        } else if (view == button_apps) {
-            startActivity(new Intent(this, AppListActivity.class));
-        } else if (view == btn_add_profile) {
+        if (view == btn_add_profile) {
             showAddProfileDialog();
         } else if (view == btn_save_profile) {
             String wssAddr = edittext_wss_addr.getText().toString().trim();
@@ -348,7 +337,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
         edittext_ech_domain.setText(prefs.getEchDomain());
         edittext_pref_ip.setText(prefs.getPrefIp());
         edittext_token.setText(prefs.getToken());
-        checkbox_global.setChecked(prefs.getGlobal());
         
         // 设置分流模式
         String routingMode = prefs.getRoutingMode();
@@ -368,15 +356,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
         edittext_pref_ip.setEnabled(editable);
         edittext_token.setEnabled(editable);
         spinner_routing_mode.setEnabled(editable);
-        checkbox_global.setEnabled(editable);
-        
-        boolean globalChecked = checkbox_global.isChecked();
-        button_apps.setEnabled(editable && !globalChecked);
-        if (button_apps.isEnabled()) {
-             button_apps.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF9C27B0)); // Purple
-        } else {
-             button_apps.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFBDBDBD)); // Grey
-        }
         
         spinner_profiles.setEnabled(editable);
         btn_add_profile.setEnabled(editable);
@@ -421,7 +400,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
         // IPv4/IPv6 默认启用
         prefs.setIpv4(true);
         prefs.setIpv6(true);
-        prefs.setGlobal(checkbox_global.isChecked());
         prefs.setUdpInTcp(false);
         prefs.setRemoteDns(true);
     }

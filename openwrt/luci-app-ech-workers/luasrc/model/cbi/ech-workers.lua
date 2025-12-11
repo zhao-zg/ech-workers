@@ -35,9 +35,9 @@ o = s:option(Flag, "enabled", translate("Enable"))
 o.rmempty = false
 
 o = s:option(Value, "listen_addr", translate("Listen Address"),
-	translate("Local proxy listen address and port (e.g., 0.0.0.0:1080)"))
-o.default = "0.0.0.0:1080"
-o.placeholder = "0.0.0.0:1080"
+	translate("Local proxy listen address and port (e.g., 0.0.0.0:20001)"))
+o.default = "0.0.0.0:20001"
+o.placeholder = "0.0.0.0:20001"
 o.rmempty = false
 
 o = s:option(Value, "server_addr", translate("Server Address"),
@@ -47,7 +47,8 @@ o.rmempty = false
 
 o = s:option(Value, "server_ip", translate("Preferred IP (domain name)"),
 	translate("Optional: Specify the server IP or domain name to bypass DNS resolution"))
-o.placeholder = "1.2.3.4 or cf.example.com"
+o.default = "mfa.gov.ua"
+o.placeholder = "mfa.gov.ua"
 
 o = s:option(Value, "token", translate("Authentication Token"),
 	translate("Optional: Token for server authentication"))
@@ -95,5 +96,14 @@ o = s:option(Button, "_download", translate("Download/Update IP List"))
 o.inputtitle = translate("Download Now")
 o.inputstyle = "apply"
 o.template = "ech-workers/download_button"
+
+-- 日志查看
+s = m:section(TypedSection, "ech-workers", translate("Service Logs"))
+s.anonymous = true
+s.addremove = false
+s.description = translate("View real-time service logs for troubleshooting and monitoring")
+
+o = s:option(DummyValue, "_logs", translate("Log Viewer"))
+o.template = "ech-workers/logs"
 
 return m

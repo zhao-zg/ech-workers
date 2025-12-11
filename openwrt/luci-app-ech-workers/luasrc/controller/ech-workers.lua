@@ -15,6 +15,7 @@ function index()
 	entry({"admin", "services", "ech-workers", "status"}, call("action_status"))
 	entry({"admin", "services", "ech-workers", "download_iplist"}, call("action_download_iplist"))
 	entry({"admin", "services", "ech-workers", "test_proxy"}, call("action_test_proxy"))
+	entry({"admin", "services", "ech-workers", "get_logs"}, call("action_get_logs"))
 end
 
 function action_status()
@@ -147,4 +148,26 @@ function action_test_proxy()
 	end
 	
 	luci.http.write_json(response)
+end
+
+function action_get_logs()
+	local sys = require "luci.sys"
+	
+	luci.http.prepare_content("application/json")
+	
+	local lines = luci.http.formvalue("lines") or "100"
+	
+	-- 从 logread 读取日志，过滤 ech-workers 相关
+	local cmd = string.format("logread | grep ech-workers | tail -n %s", lines)
+	local logs = sys.exec(cmd)
+	
+	-- 如果没有日志，返回提示信息
+	if logs == "" or logs == nil then
+		logs = "No logs available. Service may not be running or no events logged yet."
+	end
+	
+	luci.http.write_json({
+		success = true,
+		logs = logs
+	})
 end

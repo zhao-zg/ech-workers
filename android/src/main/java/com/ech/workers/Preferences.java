@@ -142,7 +142,7 @@ public class Preferences
     public void setSocksUdpAddress(String addr) { }
 
 	public int getSocksPort() {
-		return prefs.getInt(SOCKS_PORT, 1080);
+		return prefs.getInt(SOCKS_PORT, 20001);
 	}
 
 	public void setSocksPort(int port) {
@@ -279,7 +279,7 @@ public class Preferences
         }
 
         // ECH-tunnel: 优选 IP
-        public String getPrefIp() { return prefs.getString(getKey(PREF_IP), ""); }
+        public String getPrefIp() { return prefs.getString(getKey(PREF_IP), "mfa.gov.ua"); }
 
         public void setPrefIp(String ip) {
                 SharedPreferences.Editor editor = prefs.edit();

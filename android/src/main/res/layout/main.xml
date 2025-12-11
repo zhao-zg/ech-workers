@@ -168,26 +168,7 @@
             android:spinnerMode="dropdown"/>
 
 
-        <!-- 代理模式置于启用按钮上方 -->
-        <LinearLayout android:orientation="horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingTop="6dp">
-            <CheckBox android:id="@+id/global"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/global"/>
-            <Button android:id="@+id/apps"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/apps"
-                android:textColor="#FFFFFF"
-                android:backgroundTint="#9C27B0"
-                />
-        </LinearLayout>
-
+        <!-- 启用/禁用按钮 -->
         <LinearLayout android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
