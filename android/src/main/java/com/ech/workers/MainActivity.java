@@ -153,20 +153,56 @@ public class MainActivity extends Activity {
             return;
         }
         
+        // 保存当前配置到 Preferences 用于 TProxyService
+        Preferences appPrefs = new Preferences(this);
+        appPrefs.setWssAddr(serverAddr);
+        appPrefs.setPrefIp(prefs.getString(prefix + "server_ip", "mfa.gov.ua"));
+        appPrefs.setFallbackHosts(prefs.getString(prefix + "fallback_hosts", ""));
+        appPrefs.setToken(prefs.getString(prefix + "token", ""));
+        appPrefs.setEchDns(prefs.getString(prefix + "dns_server", "dns.alidns.com/dns-query"));
+        appPrefs.setEchDomain(prefs.getString(prefix + "ech_domain", "cloudflare-ech.com"));
+        appPrefs.setRoutingMode(prefs.getString(prefix + "routing_mode", "bypass_cn"));
+        
         statusText.setText(R.string.connecting);
         btnToggle.setEnabled(false);
         
-        // TODO: 启动TunnelService
-        // 简化版本：直接更新UI
+        // 启动 VPN 服务
+        Intent intent = VpnService.prepare(this);
+        if (intent != null) {
+            startActivityForResult(intent, 100);
+        } else {
+            startVpnService();
+        }
+    }
+    
+    private void startVpnService() {
+        Intent intent = new Intent(this, TProxyService.class);
+        intent.setAction(TProxyService.ACTION_CONNECT);
+        startService(intent);
+        
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             isRunning = true;
             updateUI();
             testLatency();
         }, 1000);
     }
+    
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 100 && resultCode == RESULT_OK) {
+            startVpnService();
+        } else if (requestCode == 100) {
+            Toast.makeText(this, "VPN权限被拒绝", Toast.LENGTH_SHORT).show();
+            updateUI();
+        }
+    }
 
     private void stopService() {
-        // TODO: 停止TunnelService
+        Intent intent = new Intent(this, TProxyService.class);
+        intent.setAction(TProxyService.ACTION_DISCONNECT);
+        startService(intent);
+        
         isRunning = false;
         updateUI();
     }

@@ -11,35 +11,26 @@ buildscript {
 apply plugin: 'com.android.application'
 
 def getVersionName() {
-    try {
-        def stdout = new ByteArrayOutputStream()
-        exec {
-            commandLine 'git', 'describe', '--tags', '--always'
-            standardOutput = stdout
-            workingDir projectDir.parent
-            ignoreExitValue = true
+    // 从 tunnel/version.go 读取版本号
+    def versionFile = file('../tunnel/version.go')
+    if (versionFile.exists()) {
+        def versionContent = versionFile.text
+        def matcher = versionContent =~ /Version\s*=\s*"v?([0-9]+\.[0-9]+\.[0-9]+)"/
+        if (matcher.find()) {
+            return matcher.group(1)
         }
-        def version = stdout.toString().trim().replaceAll('^v', '')
-        return version.isEmpty() ? "1.0.0" : version
-    } catch (Exception e) {
-        return "1.0.0"
     }
+    // 如果读取失败，返回默认版本
+    return "1.0.8"
 }
 
 def getVersionCode() {
-    try {
-        def stdout = new ByteArrayOutputStream()
-        exec {
-            commandLine 'git', 'rev-list', '--count', 'HEAD'
-            standardOutput = stdout
-            workingDir projectDir.parent
-            ignoreExitValue = true
-        }
-        def count = stdout.toString().trim()
-        return count.isEmpty() ? 1 : Integer.parseInt(count)
-    } catch (Exception e) {
-        return 1
+    def version = getVersionName()
+    def parts = version.split('\\.')
+    if (parts.length == 3) {
+        return parts[0].toInteger() * 10000 + parts[1].toInteger() * 100 + parts[2].toInteger()
     }
+    return 10008
 }
 
 android {
@@ -53,6 +44,10 @@ android {
                 targetSdkVersion 34
                 versionCode getVersionCode()
                 versionName getVersionName()
+                
+                // 添加 BuildConfig 字段以便在代码中访问版本号
+                buildConfigField "String", "VERSION_NAME", "\"${getVersionName()}\""
+                
                 // archivesName 不在 defaultConfig 作用域，移至 base 扩展
                 ndk {
                         abiFilters "armeabi-v7a", "arm64-v8a",'x86','x86_64'
@@ -63,6 +58,10 @@ android {
                                 arguments "APP_LDFLAGS+=-Wl,--build-id=none"
                         }
                 }
+        }
+        
+        buildFeatures {
+                buildConfig true
         }
 
 signingConfigs {
