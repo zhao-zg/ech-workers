@@ -61,6 +61,7 @@ jobs:
         go work use . ./tunnel ./mobile
         cd mobile
         go mod tidy
+        go get golang.org/x/mobile/bind
     
     - name: Build Go library
       run: |
