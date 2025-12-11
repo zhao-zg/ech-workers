@@ -112,12 +112,14 @@ plugins.withId('base') {
 }
 
 repositories {
+    google()
+    mavenCentral()
     flatDir {
-        dirs rootProject.projectDir
+        dirs '.'
     }
 }
 
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.4.1'
-    implementation(name: 'ech-workers', ext: 'aar')
+    implementation files('ech-workers.aar')
 }
