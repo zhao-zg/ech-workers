@@ -4,7 +4,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ech-workers
-PKG_VERSION:=1.1.0
+PKG_VERSION:=$(shell git -C "$(CURDIR)/.." describe --tags --always 2>/dev/null | sed 's/^v//' || echo "1.0.0")
 PKG_RELEASE:=1
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
