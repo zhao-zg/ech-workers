@@ -62,6 +62,17 @@ define Package/ech-workers/postinst
 }
 endef
 
+define Package/ech-workers/prerm
+#!/bin/sh
+[ -n "$${IPKG_INSTROOT}" ] || {
+	# 停止服务
+	/etc/init.d/ech-workers stop 2>/dev/null
+	# 禁用开机自启
+	/etc/init.d/ech-workers disable 2>/dev/null
+	exit 0
+}
+endef
+
 define Build/Prepare
 	mkdir -p $(PKG_BUILD_DIR)
 	# Go binary will be pre-compiled by GitHub Actions

@@ -50,12 +50,6 @@ public class MainActivity extends Activity {
         initViews();
         loadProfiles();
         setupListeners();
-        
-        // Request VPN permission
-        Intent intent = VpnService.prepare(this);
-        if (intent != null) {
-            startActivityForResult(intent, 0);
-        }
     }
 
     @Override
@@ -196,11 +190,14 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 100 && resultCode == RESULT_OK) {
-            startVpnService();
-        } else if (requestCode == 100) {
-            Toast.makeText(this, "VPN权限被拒绝", Toast.LENGTH_SHORT).show();
-            updateUI();
+        if (requestCode == 100) {
+            if (resultCode == RESULT_OK) {
+                startVpnService();
+            } else {
+                Toast.makeText(this, "VPN权限被拒绝", Toast.LENGTH_SHORT).show();
+                btnToggle.setEnabled(true);
+                statusText.setText(R.string.not_connected);
+            }
         }
     }
 
