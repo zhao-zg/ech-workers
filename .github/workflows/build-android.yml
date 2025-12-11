@@ -126,12 +126,11 @@ jobs:
         ls -la android/
         echo "Gradle will look for AAR in: $(cd android && pwd)"
     
-    - name: Build APK
+    - name: Build APK (Debug)
       working-directory: ./android
       run: |
         echo "Building APK with Gradle..."
-        gradle assembleRelease --stacktrace --info | grep -E "ech-workers|dependency|Could not find" || true
-        gradle assembleRelease --stacktrace
+        ./gradlew assembleDebug --stacktrace
     
     - name: Sign APK
       if: startsWith(github.ref, 'refs/tags/')
@@ -162,7 +161,7 @@ jobs:
       with:
         name: ech-workers-apk
         path: |
-          android/build/outputs/apk/release/*.apk
+          android/build/outputs/apk/debug/*.apk
         retention-days: 30
     
     - name: Create Release
@@ -170,7 +169,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          android/build/outputs/apk/release/*.apk
+          android/build/outputs/apk/debug/*.apk
         draft: false
         prerelease: false
       env:
