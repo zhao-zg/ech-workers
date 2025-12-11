@@ -151,7 +151,7 @@ start_service() {
 	config_get token main token ""
 	config_get dns_server main dns_server "dns.alidns.com/dns-query"
 	config_get ech_domain main ech_domain "cloudflare-ech.com"
-	config_get routing_mode main routing_mode "global"
+	config_get routing_mode main routing_mode "bypass_cn"
 	
 	[ -z "$server_addr" ] && {
 		logger -t ech-workers "Error: server_addr is not configured"

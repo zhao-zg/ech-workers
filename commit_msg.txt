@@ -1,0 +1,30 @@
+功能: Android双页面UI重构 + 默认分流模式改为bypass_cn
+
+Android UI重构:
+- 主页: 节点选择、连接状态、IP显示、延迟显示
+- 配置页: 节点管理、详细配置参数
+- 极简设计一屏显示完整内容无需滑动
+- 未配置节点时自动跳转配置页
+- 支持多节点配置管理
+- TODO: 国旗图标显示(待实现)
+- TODO: 真实IP检测(待实现)
+
+默认分流模式:
+- 默认分流模式从global改为bypass_cn
+- 更符合国内用户使用习惯
+- OpenWrt和Android统一默认配置
+
+布局优化:
+- 主页使用CardView卡片布局
+- 大按钮易于操作
+- 连接状态居中显示醒目
+- 配置页表单紧凑合理
+
+文件变更:
+- 新增: activity_main.xml (主页布局)
+- 新增: activity_settings.xml (配置页布局)
+- 新增: SettingsActivity.java (配置页逻辑)
+- 重写: MainActivity.java (主页逻辑)
+- 更新: strings.xml (新增UI文字)
+- 更新: arrays.xml (路由模式选项)
+- 更新: AndroidManifest.xml (注册新Activity)

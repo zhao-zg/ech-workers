@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- 标题栏 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="16dp">
+        
+        <Button
+            android:id="@+id/btn_back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/back"
+            style="?android:attr/borderlessButtonStyle"/>
+
+        <TextView
+            android:text="@string/node_config"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:gravity="center"/>
+
+        <Button
+            android:id="@+id/btn_save"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/save"
+            style="?android:attr/borderlessButtonStyle"/>
+    </LinearLayout>
+
+    <!-- 节点管理 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingBottom="8dp">
+        
+        <Spinner
+            android:id="@+id/config_profile_spinner"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:spinnerMode="dropdown"/>
+        
+        <Button
+            android:id="@+id/btn_add_profile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/add_profile"
+            android:layout_marginStart="8dp"/>
+        
+        <Button
+            android:id="@+id/btn_delete_profile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/delete_profile"
+            android:layout_marginStart="8dp"/>
+    </LinearLayout>
+
+    <!-- 配置表单 -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="4dp">
+        
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="16dp">
+            
+            <EditText
+                android:id="@+id/server_addr"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/server_addr_hint"
+                android:inputType="textUri"/>
+
+            <EditText
+                android:id="@+id/server_ip"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/server_ip_hint"
+                android:inputType="textUri"/>
+
+            <EditText
+                android:id="@+id/fallback_hosts"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/fallback_hosts_hint"
+                android:inputType="textUri"/>
+
+            <EditText
+                android:id="@+id/token"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/token_hint"
+                android:inputType="text"/>
+
+            <TextView
+                android:text="@string/routing_mode_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingTop="8dp"/>
+
+            <Spinner
+                android:id="@+id/routing_mode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:spinnerMode="dropdown"/>
+
+            <EditText
+                android:id="@+id/dns_server"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/dns_server_hint"
+                android:inputType="textUri"/>
+
+            <EditText
+                android:id="@+id/ech_domain"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/ech_domain_hint"
+                android:inputType="textUri"/>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+</LinearLayout>

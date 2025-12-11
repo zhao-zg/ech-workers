@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="routing_modes">
+        <item>@string/routing_mode_global</item>
+        <item>@string/routing_mode_bypass_cn</item>
+        <item>@string/routing_mode_none</item>
+    </string-array>
+</resources>

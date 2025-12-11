@@ -32,6 +32,7 @@
 			</intent-filter>
 		</activity>
 		<activity android:name=".AppListActivity" android:label="@string/app_name"/>
+		<activity android:name=".SettingsActivity" android:label="@string/node_config"/>
 	</application>
 	<uses-permission android:name="android.permission.INTERNET"/>
 	<uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>

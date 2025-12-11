@@ -51,4 +51,27 @@
         <string name="toast_cannot_delete_last">不能删除最后一个节点</string>
         <string name="ok">确定</string>
         <string name="cancel">取消</string>
+        
+        <!-- New UI Strings -->
+        <string name="settings">配置</string>
+        <string name="select_node">选择节点</string>
+        <string name="not_connected">未连接</string>
+        <string name="connected">已连接</string>
+        <string name="connecting">连接中...</string>
+        <string name="start_service">启动</string>
+        <string name="stop_service">停止</string>
+        <string name="back">返回</string>
+        <string name="node_config">节点配置</string>
+        <string name="add_profile">添加</string>
+        <string name="delete_profile">删除</string>
+        <string name="server_addr_hint">服务器地址 (例: your-worker.workers.dev:443)</string>
+        <string name="server_ip_hint">优选IP/域名 (可选, 例: mfa.gov.ua)</string>
+        <string name="fallback_hosts_hint">反代Host (可选)</string>
+        <string name="token_hint">身份令牌 (可选)</string>
+        <string name="routing_mode_label">分流模式</string>
+        <string name="dns_server_hint">DNS服务器 (默认: dns.alidns.com/dns-query)</string>
+        <string name="ech_domain_hint">ECH域名 (默认: cloudflare-ech.com)</string>
+        <string name="ip_format">IP: %s</string>
+        <string name="latency_format">延迟: %d ms</string>
+        <string name="no_profile_configured">未配置节点，请先添加配置</string>
 </resources>

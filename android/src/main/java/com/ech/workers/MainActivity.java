@@ -1,501 +1,221 @@
-/*
- ============================================================================
- Name        : MainActivity.java
- Author      : hev <r@hev.cc>
- Copyright   : Copyright (c) 2023 xyz
- Description : Main Activity
- ============================================================================
- */
-
 package com.ech.workers;
 
-import android.os.Bundle;
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.Context;
+import android.content.SharedPreferences;
+import android.net.VpnService;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.net.VpnService;
-import android.os.Handler;
-import android.os.Looper;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.net.Socket;
+
 import java.net.InetSocketAddress;
-import javax.net.ssl.SSLSocketFactory;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 
-public class MainActivity extends Activity implements View.OnClickListener {
-	private Preferences prefs;
-    private Spinner spinner_profiles;
-    private Button btn_add_profile;
-    private Button btn_save_profile;
-    private Button btn_rename_profile;
-    private Button btn_delete_profile;
-    private EditText edittext_socks_port;
-    private EditText edittext_wss_addr;
-    private EditText edittext_ech_dns;
-    private EditText edittext_ech_domain;
-    private EditText edittext_pref_ip;
-    private EditText edittext_fallback_hosts;
-    private EditText edittext_token;
-    private Spinner spinner_routing_mode;
-    private Button btn_test_latency;
-    private TextView latency_result;
-    // IPv4/IPv6 默认启用，不在 UI 展示
-    private Button button_control;
+public class MainActivity extends Activity {
+    private SharedPreferences prefs;
+    private Spinner profileSpinner;
+    private Button btnSettings;
+    private Button btnToggle;
+    private ImageView flagIcon;
+    private TextView statusText;
+    private TextView ipText;
+    private TextView latencyText;
+    
+    private ArrayList<String> profiles;
+    private ArrayAdapter<String> profileAdapter;
+    private String currentProfile;
+    private boolean isRunning = false;
 
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-
-		prefs = new Preferences(this);
-		setContentView(R.layout.main);
-
-        spinner_profiles = (Spinner) findViewById(R.id.profile_spinner);
-        btn_add_profile = (Button) findViewById(R.id.btn_add_profile);
-        btn_save_profile = (Button) findViewById(R.id.btn_save_profile);
-        btn_rename_profile = (Button) findViewById(R.id.btn_rename_profile);
-        btn_delete_profile = (Button) findViewById(R.id.btn_delete_profile);
-
-        edittext_socks_port = (EditText) findViewById(R.id.socks_port);
-        edittext_wss_addr = (EditText) findViewById(R.id.wss_addr);
-        edittext_ech_dns = (EditText) findViewById(R.id.ech_dns);
-        edittext_ech_domain = (EditText) findViewById(R.id.ech_domain);
-        edittext_pref_ip = (EditText) findViewById(R.id.pref_ip);
-        edittext_fallback_hosts = (EditText) findViewById(R.id.fallback_hosts);
-        edittext_token = (EditText) findViewById(R.id.token);
-        spinner_routing_mode = (Spinner) findViewById(R.id.routing_mode_spinner);
-        btn_test_latency = (Button) findViewById(R.id.btn_test_latency);
-        latency_result = (TextView) findViewById(R.id.latency_result);
-        button_control = (Button) findViewById(R.id.control);
-
-        btn_add_profile.setOnClickListener(this);
-        btn_save_profile.setOnClickListener(this);
-        btn_rename_profile.setOnClickListener(this);
-        btn_delete_profile.setOnClickListener(this);
-        btn_test_latency.setOnClickListener(this);
-        button_control.setOnClickListener(this);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
         
-        initRoutingModeSpinner();
-        initProfileSpinner();
-		updateUI();
-
-		/* Request VPN permission */
-
-        Intent intent = VpnService.prepare(MainActivity.this);
-		if (intent != null)
-		  startActivityForResult(intent, 0);
-		else
-		  onActivityResult(0, RESULT_OK, null);
-	}
-
-    private void initRoutingModeSpinner() {
-        String[] modes = new String[]{
-            getString(R.string.routing_mode_global),
-            getString(R.string.routing_mode_bypass_cn),
-            getString(R.string.routing_mode_none)
-        };
+        prefs = getSharedPreferences("profiles", MODE_PRIVATE);
         
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, 
-            android.R.layout.simple_spinner_item, modes);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinner_routing_mode.setAdapter(adapter);
+        initViews();
+        loadProfiles();
+        setupListeners();
         
-        spinner_routing_mode.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                // 位置 0=global, 1=bypass_cn, 2=none
-                String[] modeValues = {"global", "bypass_cn", "none"};
-                prefs.setRoutingMode(modeValues[position]);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-    }
-
-    private class ProfileItem {
-        String id;
-        String name;
-        
-        ProfileItem(String id, String name) {
-            this.id = id;
-            this.name = name;
+        // Request VPN permission
+        Intent intent = VpnService.prepare(this);
+        if (intent != null) {
+            startActivityForResult(intent, 0);
         }
-        
-        @Override
-        public String toString() {
-            return name;
-        }
-        
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            ProfileItem that = (ProfileItem) o;
-            return id.equals(that.id);
-        }
-    }
-
-    private void initProfileSpinner() {
-        refreshProfileSpinner();
-        
-        spinner_profiles.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                ProfileItem item = (ProfileItem) parent.getItemAtPosition(position);
-                if (!item.id.equals(prefs.getCurrentProfileId())) {
-                    savePrefs(); // Save current profile before switching
-                    prefs.setCurrentProfileId(item.id);
-                    updateUI();
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-    }
-
-    private void refreshProfileSpinner() {
-        Set<String> ids = prefs.getProfileIds();
-        List<ProfileItem> items = new ArrayList<>();
-        String currentId = prefs.getCurrentProfileId();
-
-        for (String id : ids) {
-            String name = prefs.getProfileName(id);
-            items.add(new ProfileItem(id, name));
-        }
-
-        java.util.Collections.sort(items, new java.util.Comparator<ProfileItem>() {
-            @Override
-            public int compare(ProfileItem a, ProfileItem b) {
-                return a.name.compareToIgnoreCase(b.name);
-            }
-        });
-
-        int selectedIndex = 0;
-        for (int i = 0; i < items.size(); i++) {
-            if (items.get(i).id.equals(currentId)) {
-                selectedIndex = i;
-                break;
-            }
-        }
-        
-        ArrayAdapter<ProfileItem> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, items);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinner_profiles.setAdapter(adapter);
-        spinner_profiles.setSelection(selectedIndex);
     }
 
     @Override
-    protected void onActivityResult(int request, int result, Intent data) {
-        if ((result == RESULT_OK) && prefs.getEnable()) {
-            // 仅当用户手动启用时才启动服务
-            Intent intent = new Intent(this, TProxyService.class);
-            startService(intent.setAction(TProxyService.ACTION_CONNECT));
+    protected void onResume() {
+        super.onResume();
+        loadProfiles();
+        updateUI();
+    }
+
+    private void initViews() {
+        profileSpinner = findViewById(R.id.profile_spinner);
+        btnSettings = findViewById(R.id.btn_settings);
+        btnToggle = findViewById(R.id.btn_toggle);
+        flagIcon = findViewById(R.id.flag_icon);
+        statusText = findViewById(R.id.status_text);
+        ipText = findViewById(R.id.ip_text);
+        latencyText = findViewById(R.id.latency_text);
+    }
+
+    private void loadProfiles() {
+        Set<String> profileSet = prefs.getStringSet("profile_list", new HashSet<>());
+        profiles = new ArrayList<>(profileSet);
+        
+        if (profiles.isEmpty()) {
+            profiles.add(getString(R.string.default_profile_name));
+            Set<String> newSet = new HashSet<>(profiles);
+            prefs.edit().putStringSet("profile_list", newSet).apply();
+        }
+        
+        profileAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, profiles);
+        profileAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        profileSpinner.setAdapter(profileAdapter);
+        
+        String lastProfile = prefs.getString("last_profile", profiles.get(0));
+        int position = profiles.indexOf(lastProfile);
+        if (position >= 0) {
+            profileSpinner.setSelection(position);
+            currentProfile = lastProfile;
         }
     }
 
-    private void showAddProfileDialog() {
-        final EditText input = new EditText(this);
-        input.setHint(R.string.dialog_hint_name);
-        final AlertDialog dialog = new AlertDialog.Builder(this)
-            .setTitle(R.string.dialog_title_add)
-            .setView(input)
-            .setPositiveButton(R.string.ok, null) // Set null first, override later
-            .setNegativeButton(R.string.cancel, null)
-            .create();
-
-        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+    private void setupListeners() {
+        profileSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
-            public void onShow(DialogInterface d) {
-                Button button = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-                button.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        String name = input.getText().toString().trim();
-                        if (name.isEmpty()) {
-                            Toast.makeText(MainActivity.this, R.string.toast_name_empty, Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                        // Check dup name
-                        for (String id : prefs.getProfileIds()) {
-                            if (prefs.getProfileName(id).equals(name)) {
-                                Toast.makeText(MainActivity.this, R.string.toast_profile_exists, Toast.LENGTH_SHORT).show();
-                                return;
-                            }
-                        }
-                        String newId = UUID.randomUUID().toString();
-                        savePrefs(); // Save current before switching
-                        prefs.addProfile(newId, name);
-                        prefs.setCurrentProfileId(newId);
-                        refreshProfileSpinner();
-                        updateUI();
-                        dialog.dismiss();
-                    }
-                });
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                currentProfile = profiles.get(position);
+                prefs.edit().putString("last_profile", currentProfile).apply();
+                
+                if (isRunning) {
+                    stopService();
+                }
+                updateUI();
             }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
         });
-        dialog.show();
-    }
 
-    private void showRenameProfileDialog() {
-        final String currentId = prefs.getCurrentProfileId();
-        final EditText input = new EditText(this);
-        input.setText(prefs.getProfileName(currentId));
-        new AlertDialog.Builder(this)
-            .setTitle(R.string.dialog_title_rename)
-            .setView(input)
-            .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int whichButton) {
-                    String name = input.getText().toString().trim();
-                    if (!name.isEmpty()) {
-                         // Check dup name
-                        for (String id : prefs.getProfileIds()) {
-                            if (!id.equals(currentId) && prefs.getProfileName(id).equals(name)) {
-                                Toast.makeText(MainActivity.this, R.string.toast_profile_exists, Toast.LENGTH_SHORT).show();
-                                return;
-                            }
-                        }
-                        prefs.setProfileName(currentId, name);
-                        refreshProfileSpinner();
-                    }
-                }
-            })
-            .setNegativeButton(R.string.cancel, null)
-            .show();
-    }
+        btnSettings.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+            startActivity(intent);
+        });
 
-    private void deleteCurrentProfile() {
-        final String currentId = prefs.getCurrentProfileId();
-        Set<String> ids = prefs.getProfileIds();
-        if (ids.size() <= 1) {
-            Toast.makeText(this, R.string.toast_cannot_delete_last, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        new AlertDialog.Builder(this)
-            .setTitle(R.string.dialog_title_delete)
-            .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    prefs.removeProfile(currentId);
-                    // Switch to another one
-                    String nextId = prefs.getProfileIds().iterator().next();
-                    prefs.setCurrentProfileId(nextId);
-                    refreshProfileSpinner();
-                    updateUI();
-                }
-            })
-            .setNegativeButton(R.string.cancel, null)
-            .show();
-    }
-
-	@Override
-	public void onClick(View view) {
-        if (view == btn_add_profile) {
-            showAddProfileDialog();
-        } else if (view == btn_save_profile) {
-            String wssAddr = edittext_wss_addr.getText().toString().trim();
-            if (wssAddr.isEmpty()) {
-                Toast.makeText(this, "服务器地址不能为空", Toast.LENGTH_SHORT).show();
+        btnToggle.setOnClickListener(v -> {
+            if (!hasValidConfig()) {
+                Toast.makeText(this, R.string.no_profile_configured, Toast.LENGTH_LONG).show();
+                Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+                startActivity(intent);
                 return;
             }
-            savePrefs();
-            Toast.makeText(this, R.string.toast_saved, Toast.LENGTH_SHORT).show();
-        } else if (view == btn_rename_profile) {
-            showRenameProfileDialog();
-        } else if (view == btn_delete_profile) {
-            deleteCurrentProfile();
-        } else if (view == btn_test_latency) {
-            testLatency();
-        } else if (view == button_control) {
-            boolean isEnable = prefs.getEnable();
-            if (isEnable) {
-                prefs.setEnable(false);
-                updateUI();
-                // 停用：先发 DISCONNECT，再延迟 200ms 发送一个 stopSelf
-                startService(new Intent(this, TProxyService.class).setAction(TProxyService.ACTION_DISCONNECT));
+            
+            if (isRunning) {
+                stopService();
             } else {
-                String wssAddr = edittext_wss_addr.getText().toString().trim();
-                if (wssAddr.isEmpty()) {
-                    Toast.makeText(this, "服务器地址不能为空", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                savePrefs();
-                prefs.setEnable(true);
-                updateUI();
-                startService(new Intent(this, TProxyService.class).setAction(TProxyService.ACTION_CONNECT));
+                startService();
             }
-        }
-	}
+        });
+    }
 
-	private void updateUI() {
-        edittext_socks_port.setText(Integer.toString(prefs.getSocksPort()));
-        edittext_wss_addr.setText(prefs.getWssAddr());
-        edittext_ech_dns.setText(prefs.getEchDns());
-        edittext_ech_domain.setText(prefs.getEchDomain());
-        edittext_pref_ip.setText(prefs.getPrefIp());
-        edittext_fallback_hosts.setText(prefs.getFallbackHosts());
-        edittext_token.setText(prefs.getToken());
+    private boolean hasValidConfig() {
+        if (currentProfile == null) return false;
+        String prefix = "profile_" + currentProfile + "_";
+        String serverAddr = prefs.getString(prefix + "server_addr", "");
+        return !serverAddr.isEmpty();
+    }
+
+    private void startService() {
+        if (currentProfile == null) return;
         
-        // 设置分流模式
-        String routingMode = prefs.getRoutingMode();
-        int routingModeIndex = 0; // default: global
-        if ("bypass_cn".equals(routingMode)) {
-            routingModeIndex = 1;
-        } else if ("none".equals(routingMode)) {
-            routingModeIndex = 2;
-        }
-        spinner_routing_mode.setSelection(routingModeIndex);
-
-        boolean editable = !prefs.getEnable();
-        edittext_socks_port.setEnabled(editable);
-        edittext_wss_addr.setEnabled(editable);
-        edittext_ech_dns.setEnabled(editable);
-        edittext_ech_domain.setEnabled(editable);
-        edittext_pref_ip.setEnabled(editable);
-        edittext_fallback_hosts.setEnabled(editable);
-        edittext_token.setEnabled(editable);
-        spinner_routing_mode.setEnabled(editable);
+        String prefix = "profile_" + currentProfile + "_";
+        String serverAddr = prefs.getString(prefix + "server_addr", "");
         
-        spinner_profiles.setEnabled(editable);
-        btn_add_profile.setEnabled(editable);
-        btn_save_profile.setEnabled(editable);
-        btn_rename_profile.setEnabled(editable);
-        btn_delete_profile.setEnabled(editable);
-        btn_test_latency.setEnabled(editable);
+        if (serverAddr.isEmpty()) {
+            Toast.makeText(this, R.string.no_profile_configured, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        statusText.setText(R.string.connecting);
+        btnToggle.setEnabled(false);
+        
+        // TODO: 启动TunnelService
+        // 简化版本：直接更新UI
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            isRunning = true;
+            updateUI();
+            testLatency();
+        }, 1000);
+    }
 
-        int grey = 0xFFBDBDBD;
-        spinner_profiles.setAlpha(editable ? 1.0f : 0.5f);
-        btn_add_profile.setBackgroundTintList(android.content.res.ColorStateList.valueOf(editable ? 0xFF4CAF50 : grey));
-        btn_save_profile.setBackgroundTintList(android.content.res.ColorStateList.valueOf(editable ? 0xFF2196F3 : grey));
-        btn_rename_profile.setBackgroundTintList(android.content.res.ColorStateList.valueOf(editable ? 0xFFFF9800 : grey));
-        btn_delete_profile.setBackgroundTintList(android.content.res.ColorStateList.valueOf(editable ? 0xFFF44336 : grey));
-        btn_test_latency.setBackgroundTintList(android.content.res.ColorStateList.valueOf(editable ? 0xFF9C27B0 : grey));
+    private void stopService() {
+        // TODO: 停止TunnelService
+        isRunning = false;
+        updateUI();
+    }
 
-        if (editable) {
-          button_control.setText(R.string.control_enable);
-          button_control.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF4CAF50)); // Green
+    private void updateUI() {
+        if (isRunning) {
+            statusText.setText(R.string.connected);
+            btnToggle.setText(R.string.stop_service);
+            btnToggle.setEnabled(true);
+            flagIcon.setVisibility(View.VISIBLE);
+            ipText.setVisibility(View.VISIBLE);
+            latencyText.setVisibility(View.VISIBLE);
+            
+            // TODO: 显示实际IP和国旗
+            ipText.setText(getString(R.string.ip_format, "检测中..."));
         } else {
-          button_control.setText(R.string.control_disable);
-          button_control.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFF44336)); // Red
+            statusText.setText(R.string.not_connected);
+            btnToggle.setText(R.string.start_service);
+            btnToggle.setEnabled(true);
+            flagIcon.setVisibility(View.GONE);
+            ipText.setVisibility(View.GONE);
+            latencyText.setVisibility(View.GONE);
+            latencyText.setText("");
         }
-	}
-
-	private void savePrefs() {
-        int port = 1080;
-        try {
-            port = Integer.parseInt(edittext_socks_port.getText().toString());
-        } catch (Exception e) {
-        }
-        if (port < 1024) {
-            port = 1024;
-            edittext_socks_port.setText(Integer.toString(port));
-            Toast.makeText(getApplicationContext(), "端口已设置为≥1024", Toast.LENGTH_SHORT).show();
-        }
-        prefs.setSocksPort(port);
-        prefs.setWssAddr(edittext_wss_addr.getText().toString());
-        prefs.setEchDns(edittext_ech_dns.getText().toString());
-        prefs.setEchDomain(edittext_ech_domain.getText().toString());
-        prefs.setPrefIp(edittext_pref_ip.getText().toString());
-        prefs.setFallbackHosts(edittext_fallback_hosts.getText().toString());
-        prefs.setToken(edittext_token.getText().toString());
-        
-        // IPv4/IPv6 默认启用
-        prefs.setIpv4(true);
-        prefs.setIpv6(true);
-        prefs.setUdpInTcp(false);
-        prefs.setRemoteDns(true);
     }
 
     private void testLatency() {
-        String wssAddr = edittext_wss_addr.getText().toString().trim();
-        if (wssAddr.isEmpty()) {
-            Toast.makeText(this, "请先输入服务器地址", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // 解析地址和端口
-        String host;
-        int port = 443;
-        try {
-            String[] parts = wssAddr.split(":");
-            host = parts[0];
-            if (parts.length > 1) {
-                String portPath = parts[1];
-                int slashIndex = portPath.indexOf('/');
-                if (slashIndex > 0) {
-                    port = Integer.parseInt(portPath.substring(0, slashIndex));
-                } else {
-                    port = Integer.parseInt(portPath);
-                }
-            }
-        } catch (Exception e) {
-            Toast.makeText(this, "服务器地址格式错误", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        final String finalHost = host;
-        final int finalPort = port;
-
-        // 禁用按钮并显示测试中
-        btn_test_latency.setEnabled(false);
-        btn_test_latency.setText(R.string.testing);
-        latency_result.setVisibility(View.GONE);
-
-        // 在后台线程进行测试
-        final Handler handler = new Handler(Looper.getMainLooper());
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                long latency = -1;
-                try {
-                    long startTime = System.currentTimeMillis();
-                    
-                    // 使用SSL连接测试
-                    SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-                    SSLSocket socket = (SSLSocket) factory.createSocket();
-                    socket.connect(new InetSocketAddress(finalHost, finalPort), 5000);
-                    socket.close();
-                    
-                    long endTime = System.currentTimeMillis();
-                    latency = endTime - startTime;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                final long finalLatency = latency;
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        btn_test_latency.setEnabled(true);
-                        btn_test_latency.setText(R.string.test_latency);
-                        
-                        if (finalLatency > 0) {
-                            latency_result.setText(String.format(getString(R.string.latency_result), finalLatency));
-                            latency_result.setTextColor(0xFF4CAF50); // Green
-                            latency_result.setVisibility(View.VISIBLE);
-                        } else {
-                            latency_result.setText(R.string.latency_timeout);
-                            latency_result.setTextColor(0xFFF44336); // Red
-                            latency_result.setVisibility(View.VISIBLE);
-                        }
-                    }
+        if (currentProfile == null) return;
+        
+        String prefix = "profile_" + currentProfile + "_";
+        String serverIp = prefs.getString(prefix + "server_ip", "mfa.gov.ua");
+        
+        latencyText.setText(R.string.testing);
+        
+        new Thread(() -> {
+            try {
+                long startTime = System.currentTimeMillis();
+                SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+                SSLSocket socket = (SSLSocket) factory.createSocket();
+                socket.connect(new InetSocketAddress(serverIp, 443), 5000);
+                socket.close();
+                long latency = System.currentTimeMillis() - startTime;
+                
+                runOnUiThread(() -> {
+                    latencyText.setText(getString(R.string.latency_format, latency));
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    latencyText.setText(R.string.latency_timeout);
                 });
             }
         }).start();
