@@ -25,6 +25,23 @@ import (
 
 // ======================== 全局参数 ========================
 
+// DoH 服务器 IP 映射 (避免 DNS 查询失败)
+var dohServerIPs = map[string]string{
+	"dns.alidns.com":        "223.5.5.5",       // 阿里公共DNS
+	"doh.pub":               "1.12.12.12",      // 腾讯公共DNS
+	"dns.google":            "8.8.8.8",         // Google DNS
+	"cloudflare-dns.com":    "1.1.1.1",         // Cloudflare DNS
+	"dns.quad9.net":         "9.9.9.9",         // Quad9 DNS
+}
+
+// 备用 DoH 服务器列表
+var fallbackDoHServers = []string{
+	"https://223.5.5.5/dns-query",              // 阿里DNS IP
+	"https://doh.pub/dns-query",                 // 腾讯DNS
+	"https://1.1.1.1/dns-query",                 // Cloudflare
+	"https://8.8.8.8/dns-query",                 // Google
+}
+
 var (
 	listenAddr    string
 	serverAddr    string
@@ -504,6 +521,16 @@ func queryHTTPSRecord(domain, server string) (string, error) {
 
 // queryDoH 执行 DoH 查询（用于获取 ECH 配置）
 func queryDoH(domain, dohURL string) (string, error) {
+	// 尝试将 DoH 域名替换为 IP 地址
+	originalURL := dohURL
+	for dohHost, ip := range dohServerIPs {
+		if strings.Contains(dohURL, dohHost) {
+			dohURL = strings.Replace(dohURL, dohHost, ip, 1)
+			log.Printf("DoH: 使用 IP 地址 %s 替代 %s", ip, dohHost)
+			break
+		}
+	}
+	
 	u, err := url.Parse(dohURL)
 	if err != nil {
 		return "", fmt.Errorf("无效的 DoH URL: %v", err)
@@ -522,12 +549,131 @@ func queryDoH(domain, dohURL string) (string, error) {
 	}
 	req.Header.Set("Accept", "application/dns-message")
 	req.Header.Set("Content-Type", "application/dns-message")
+	
+	// 如果使用了 IP 地址,需要设置 Host 头
+	if originalURL != dohURL {
+		originalHost, _ := url.Parse(originalURL)
+		if originalHost != nil && originalHost.Host != "" {
+			req.Host = originalHost.Host
+		}
+	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	// 使用自定义 Transport 跳过 TLS 主机名验证(使用 IP 时需要)
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: false,
+		},
+		DialContext: (&net.Dialer{
+			Timeout:   5 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+	}
+	
+	// 如果使用了 IP,需要跳过证书验证或使用 ServerName
+	if originalURL != dohURL {
+		originalHost, _ := url.Parse(originalURL)
+		if originalHost != nil && originalHost.Host != "" {
+			transport.TLSClientConfig.ServerName = strings.Split(originalHost.Host, ":")[0]
+		}
+	}
+	
+	client := &http.Client{
+		Timeout:   10 * time.Second,
+		Transport: transport,
+	}
+	
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("DoH 请求失败: %v", err)
+		// 如果主 DoH 失败,尝试备用服务器
+		log.Printf("主 DoH 服务器失败: %v, 尝试备用服务器...", err)
+		return tryFallbackDoH(domain)
 	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("DoH 服务器返回错误: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("读取 DoH 响应失败: %v", err)
+	}
+
+	return parseDNSResponse(body)
+}
+
+// tryFallbackDoH 尝试使用备用 DoH 服务器
+func tryFallbackDoH(domain string) (string, error) {
+	var lastErr error
+	
+	for i, fallbackURL := range fallbackDoHServers {
+		log.Printf("尝试备用 DoH 服务器 [%d/%d]: %s", i+1, len(fallbackDoHServers), fallbackURL)
+		
+		u, err := url.Parse(fallbackURL)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+
+		dnsQuery := buildDNSQuery(domain, typeHTTPS)
+		dnsBase64 := base64.RawURLEncoding.EncodeToString(dnsQuery)
+
+		q := u.Query()
+		q.Set("dns", dnsBase64)
+		u.RawQuery = q.Encode()
+
+		req, err := http.NewRequest("GET", u.String(), nil)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		req.Header.Set("Accept", "application/dns-message")
+		req.Header.Set("Content-Type", "application/dns-message")
+
+		client := &http.Client{
+			Timeout: 10 * time.Second,
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: false,
+				},
+			},
+		}
+		
+		resp, err := client.Do(req)
+		if err != nil {
+			lastErr = err
+			log.Printf("备用服务器 %s 失败: %v", fallbackURL, err)
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			lastErr = fmt.Errorf("HTTP %d", resp.StatusCode)
+			continue
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			lastErr = err
+			continue
+		}
+
+		result, err := parseDNSResponse(body)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		
+		log.Printf("备用 DoH 服务器 %s 查询成功", fallbackURL)
+		return result, nil
+	}
+	
+	if lastErr != nil {
+		return "", fmt.Errorf("所有 DoH 服务器均失败,最后错误: %v", lastErr)
+	}
+	return "", errors.New("所有 DoH 服务器均失败")
+}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
