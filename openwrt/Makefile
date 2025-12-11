@@ -44,6 +44,23 @@ define Package/ech-workers/conffiles
 /etc/ech-workers/
 endef
 
+define Package/ech-workers/postinst
+#!/bin/sh
+[ -n "$${IPKG_INSTROOT}" ] || {
+	# 如果存在-opkg备份文件，说明配置文件有冲突
+	if [ -f /etc/config/ech-workers-opkg ]; then
+		# 检查旧配置文件是否存在fallback_hosts选项
+		if ! grep -q "option fallback_hosts" /etc/config/ech-workers 2>/dev/null; then
+			# 旧配置文件缺少新选项，添加它
+			sed -i "/option server_ip/a\	option fallback_hosts ''" /etc/config/ech-workers
+		fi
+		# 删除-opkg备份文件
+		rm -f /etc/config/ech-workers-opkg
+	fi
+	exit 0
+}
+endef
+
 define Build/Prepare
 	mkdir -p $(PKG_BUILD_DIR)
 	# Go binary will be pre-compiled by GitHub Actions
