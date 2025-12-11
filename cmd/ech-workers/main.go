@@ -21,6 +21,8 @@ var (
 	dnsServer     string
 	echDomain     string
 	routingMode   string
+	showVersion   bool
+	checkUpdate   bool
 )
 
 func init() {
@@ -32,16 +34,42 @@ func init() {
 	flag.StringVar(&dnsServer, "dns", "dns.alidns.com/dns-query", "ECH 查询 DoH 服务器")
 	flag.StringVar(&echDomain, "ech", "cloudflare-ech.com", "ECH 查询域名")
 	flag.StringVar(&routingMode, "routing", "bypass_cn", "分流模式: global(全局代理), bypass_cn(跳过中国大陆), none(不改变代理)")
+	flag.BoolVar(&showVersion, "version", false, "显示版本信息")
+	flag.BoolVar(&checkUpdate, "check-update", false, "检查更新")
 }
 
 func main() {
 	flag.Parse()
 
+	// 处理版本信息
+	if showVersion {
+		log.Printf("ECH-Workers %s", tunnel.Version)
+		return
+	}
+
+	// 处理更新检查
+	if checkUpdate {
+		log.Printf("当前版本: %s", tunnel.Version)
+		log.Printf("正在检查更新...")
+		
+		release, hasUpdate, err := tunnel.CheckUpdate()
+		if err != nil {
+			log.Fatalf("检查更新失败: %v", err)
+		}
+		
+		if hasUpdate {
+			tunnel.PrintUpdateInfo(release)
+		} else {
+			log.Printf("✓ 已是最新版本!")
+		}
+		return
+	}
+
 	if serverAddr == "" {
 		log.Fatal("必须指定服务端地址 -f\n\n示例:\n  ./ech-workers -l 0.0.0.0:1080 -f your-worker.workers.dev:443 -token your-token")
 	}
 
-	log.Printf("[启动] ECH-Workers v1.1.0")
+	log.Printf("[启动] ECH-Workers %s", tunnel.Version)
 	log.Printf("[启动] 监听地址: %s", listenAddr)
 	log.Printf("[启动] 服务器地址: %s", serverAddr)
 	if serverIP != "" {
@@ -51,6 +79,9 @@ func main() {
 		log.Printf("[启动] 反代Host: %s", fallbackHosts)
 	}
 	log.Printf("[启动] 分流模式: %s", routingMode)
+
+	// 异步检查更新(不阻塞启动)
+	tunnel.CheckUpdateAsync()
 
 	// 设置分流模式
 	tunnel.SetRoutingMode(routingMode)

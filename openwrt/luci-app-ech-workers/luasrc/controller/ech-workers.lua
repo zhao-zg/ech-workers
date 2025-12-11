@@ -16,6 +16,7 @@ function index()
 	entry({"admin", "services", "ech-workers", "download_iplist"}, call("action_download_iplist"))
 	entry({"admin", "services", "ech-workers", "test_proxy"}, call("action_test_proxy"))
 	entry({"admin", "services", "ech-workers", "get_logs"}, call("action_get_logs"))
+	entry({"admin", "services", "ech-workers", "check_update"}, call("action_check_update"))
 end
 
 function action_status()
@@ -198,4 +199,80 @@ function action_get_logs()
 		success = true,
 		logs = logs
 	})
+end
+
+function action_check_update()
+	local sys = require "luci.sys"
+	local json = require "luci.jsonc"
+	local util = require "luci.util"
+	
+	-- 获取当前版本
+	local current_version = sys.exec("ech-workers -version 2>/dev/null | grep -oP 'v[0-9]+\\.[0-9]+\\.[0-9]+' || echo 'unknown'"):gsub("\n", "")
+	
+	-- 从 GitHub API 获取最新版本
+	local api_url = "https://api.github.com/repos/zhao-zg/ech-workers/releases/latest"
+	local result = sys.exec(string.format("timeout 10 wget -qO- --header='User-Agent: ECH-Workers-OpenWrt/%s' '%s' 2>/dev/null", current_version, api_url))
+	
+	if result == "" or result == nil then
+		luci.template.render("ech-workers/update_result", {
+			success = false,
+			error = "Failed to check for updates. Please check your internet connection."
+		})
+		return
+	end
+	
+	local release_info = json.parse(result)
+	if not release_info or not release_info.tag_name then
+		luci.template.render("ech-workers/update_result", {
+			success = false,
+			error = "Failed to parse release information."
+		})
+		return
+	end
+	
+	local latest_version = release_info.tag_name
+	local has_update = compare_version(latest_version, current_version) > 0
+	
+	luci.template.render("ech-workers/update_result", {
+		success = true,
+		current_version = current_version,
+		latest_version = latest_version,
+		has_update = has_update,
+		published_at = release_info.published_at,
+		body = release_info.body or "",
+		html_url = release_info.html_url
+	})
+end
+
+-- 比较版本号
+function compare_version(v1, v2)
+	-- 移除 'v' 前缀
+	v1 = v1:gsub("^v", "")
+	v2 = v2:gsub("^v", "")
+	
+	local parts1 = {}
+	local parts2 = {}
+	
+	for part in v1:gmatch("[^%.]+") do
+		table.insert(parts1, tonumber(part:match("%d+")) or 0)
+	end
+	
+	for part in v2:gmatch("[^%.]+") do
+		table.insert(parts2, tonumber(part:match("%d+")) or 0)
+	end
+	
+	local max_len = math.max(#parts1, #parts2)
+	
+	for i = 1, max_len do
+		local n1 = parts1[i] or 0
+		local n2 = parts2[i] or 0
+		
+		if n1 > n2 then
+			return 1
+		elseif n1 < n2 then
+			return -1
+		end
+	end
+	
+	return 0
 end

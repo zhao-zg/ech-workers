@@ -97,6 +97,25 @@ o = s:option(Value, "ech_domain", translate("ECH Domain"),
 o.default = "cloudflare-ech.com"
 o.placeholder = "cloudflare-ech.com"
 
+-- 版本信息
+s = m:section(TypedSection, "ech-workers", translate("Version Information"))
+s.anonymous = true
+s.addremove = false
+
+o = s:option(DummyValue, "_version", translate("Current Version"))
+o.rawhtml = true
+function o.cfgvalue(self, section)
+	local version = sys.exec("ech-workers -version 2>/dev/null | grep -oP 'v[0-9]+\\.[0-9]+\\.[0-9]+' || echo 'Unknown'")
+	return string.format('<strong>%s</strong>', version:gsub("\n", ""))
+end
+
+o = s:option(Button, "_check_update", translate("Check for Updates"))
+o.inputtitle = translate("Check Now")
+o.inputstyle = "apply"
+o.write = function()
+	luci.http.redirect(luci.dispatcher.build_url("admin", "services", "ech-workers", "check_update"))
+end
+
 -- 日志查看
 s = m:section(TypedSection, "ech-workers", translate("Service Logs"))
 s.anonymous = true

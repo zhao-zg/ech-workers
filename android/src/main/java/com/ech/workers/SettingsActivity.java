@@ -2,7 +2,10 @@ package com.ech.workers;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.View;
@@ -11,6 +14,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -59,6 +63,10 @@ public class SettingsActivity extends Activity {
                 R.array.routing_modes, android.R.layout.simple_spinner_item);
         routingAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         routingModeSpinner.setAdapter(routingAdapter);
+        
+        // 设置版本信息
+        TextView versionText = findViewById(R.id.version_text);
+        versionText.setText(getString(R.string.current_version, VersionChecker.getCurrentVersion()));
     }
 
     private void loadProfiles() {
@@ -100,6 +108,8 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.btn_add_profile).setOnClickListener(v -> showAddProfileDialog());
         
         findViewById(R.id.btn_delete_profile).setOnClickListener(v -> deleteCurrentProfile());
+        
+        findViewById(R.id.btn_check_update).setOnClickListener(v -> checkForUpdates());
     }
 
     private void loadProfileConfig(String profileName) {
@@ -221,5 +231,54 @@ public class SettingsActivity extends Activity {
             case 2: return "none";
             default: return "bypass_cn";
         }
+    }
+    
+    private void checkForUpdates() {
+        final ProgressDialog progressDialog = ProgressDialog.show(this, 
+                getString(R.string.check_update), 
+                getString(R.string.checking_update), 
+                true, false);
+        
+        VersionChecker.checkUpdate(new VersionChecker.VersionCheckListener() {
+            @Override
+            public void onUpdateAvailable(VersionChecker.UpdateInfo updateInfo) {
+                progressDialog.dismiss();
+                showUpdateDialog(updateInfo);
+            }
+
+            @Override
+            public void onNoUpdate() {
+                progressDialog.dismiss();
+                Toast.makeText(SettingsActivity.this, R.string.no_update, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onError(String error) {
+                progressDialog.dismiss();
+                Toast.makeText(SettingsActivity.this, 
+                        getString(R.string.update_error, error), 
+                        Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+    
+    private void showUpdateDialog(VersionChecker.UpdateInfo updateInfo) {
+        String formattedDate = VersionChecker.formatPublishedDate(updateInfo.publishedAt);
+        String message = getString(R.string.update_dialog_message, 
+                updateInfo.currentVersion, 
+                updateInfo.latestVersion, 
+                formattedDate,
+                updateInfo.body);
+        
+        new AlertDialog.Builder(this)
+                .setTitle(getString(R.string.update_dialog_title, updateInfo.latestVersion))
+                .setMessage(message)
+                .setPositiveButton(R.string.download, (dialog, which) -> {
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setData(Uri.parse(updateInfo.downloadUrl));
+                    startActivity(intent);
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
     }
 }

@@ -199,6 +199,58 @@ cd openwrt
 
 详细构建说明请查看各平台的 README。
 
+## 命令行使用
+
+### 查看版本
+
+```bash
+# 显示当前版本
+./ech-workers -version
+```
+
+### 检查更新
+
+```bash
+# 手动检查是否有新版本
+./ech-workers -check-update
+```
+
+**自动更新检查:**
+- 程序启动时会自动在后台检查更新（不阻塞启动）
+- 发现新版本会自动提示下载地址和更新内容
+- 检查失败不影响程序正常运行
+
+### 启动代理
+
+```bash
+# 基本使用
+./ech-workers -l 0.0.0.0:1080 -f your-worker.workers.dev:443 -token your-token
+
+# 使用优选IP
+./ech-workers -l 0.0.0.0:1080 -f your-worker.workers.dev:443 -ip 1.2.3.4
+
+# 使用反代Host
+./ech-workers -l 0.0.0.0:1080 -f your-worker.workers.dev:443 -fallback example.com
+
+# 设置分流模式
+./ech-workers -l 0.0.0.0:1080 -f your-worker.workers.dev:443 -routing bypass_cn
+```
+
+### 命令行参数
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `-version` | 显示版本信息 | - |
+| `-check-update` | 检查更新 | - |
+| `-l` | 监听地址 | `0.0.0.0:1080` |
+| `-f` | 服务器地址 | 必填 |
+| `-ip` | 优选IP（域名） | 空 |
+| `-fallback` | 反代Host | 空 |
+| `-token` | 身份令牌 | 空 |
+| `-dns` | DoH 服务器 | `dns.alidns.com/dns-query` |
+| `-ech` | ECH 查询域名 | `cloudflare-ech.com` |
+| `-routing` | 分流模式 | `bypass_cn` |
+
 ## 技术栈
 
 - **服务端**: Cloudflare Workers (JavaScript)
@@ -215,6 +267,12 @@ cd openwrt
 - **并发连接**: 1000+ (取决于设备)
 
 ## 常见问题
+
+### Q: 如何检查是否有新版本？
+A: 
+- **自动检查**: 程序启动时自动在后台检查更新
+- **手动检查**: 运行 `./ech-workers -check-update`
+- **查看版本**: 运行 `./ech-workers -version`
 
 ### Q: ECH 连接失败？
 A: 确保使用 Go 1.24+ 编译，并且服务端支持 ECH.

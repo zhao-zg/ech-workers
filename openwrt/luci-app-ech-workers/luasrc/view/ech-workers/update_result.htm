@@ -1,0 +1,46 @@
+<%+header%>
+
+<div class="cbi-map">
+	<h2><%:Check for Updates%></h2>
+	
+	<% if success then %>
+		<% if has_update then %>
+			<div class="alert-message success" style="padding: 15px; margin: 10px 0; border-radius: 5px; background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724;">
+				<h3>🎉 <%:New Version Available%></h3>
+				<p><strong><%:Current Version%>:</strong> <%= current_version %></p>
+				<p><strong><%:Latest Version%>:</strong> <%= latest_version %></p>
+				<p><strong><%:Published At%>:</strong> <%= published_at %></p>
+				
+				<% if body and body ~= "" then %>
+					<h4><%:Release Notes%>:</h4>
+					<pre style="white-space: pre-wrap; background-color: #f8f9fa; padding: 10px; border-radius: 3px; max-height: 300px; overflow-y: auto;"><%= body %></pre>
+				<% end %>
+				
+				<p style="margin-top: 15px;">
+					<a href="<%= html_url %>" target="_blank" class="btn cbi-button cbi-button-apply" style="text-decoration: none;">
+						<%:Download from GitHub%>
+					</a>
+				</p>
+			</div>
+		<% else %>
+			<div class="alert-message info" style="padding: 15px; margin: 10px 0; border-radius: 5px; background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460;">
+				<h3>✓ <%:Already Up to Date%></h3>
+				<p><strong><%:Current Version%>:</strong> <%= current_version %></p>
+				<p><%:You are using the latest version.%></p>
+			</div>
+		<% end %>
+	<% else %>
+		<div class="alert-message error" style="padding: 15px; margin: 10px 0; border-radius: 5px; background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24;">
+			<h3>❌ <%:Check Failed%></h3>
+			<p><%= error %></p>
+		</div>
+	<% end %>
+	
+	<div style="margin-top: 20px;">
+		<form method="get" action="<%=url('admin/services/ech-workers')%>">
+			<input type="submit" class="btn cbi-button" value="<%:Back to Configuration%>" />
+		</form>
+	</div>
+</div>
+
+<%+footer%>
