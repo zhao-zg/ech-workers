@@ -220,12 +220,12 @@ signingConfigs {
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    // 设置APK输出文件名（使用 safeVersion，避免字面 "null"）
+    // 设置APK输出文件名
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
-            def rawVersion = variant.versionName
-            def derived = (rawVersion != null) ? rawVersion.toString().trim() : ''
-            def safeVersion = (derived && derived.toLowerCase() != 'null') ? derived : getVersionName()
+            // 直接调用 getVersionName() 获取版本号
+            def safeVersion = getVersionName()
+            println("Setting APK filename with version: ${safeVersion}")
 
             def abi = output.getFilter(com.android.build.OutputFile.ABI)
             def buildType = variant.buildType.name
@@ -245,6 +245,7 @@ signingConfigs {
                     outputFileName = "com.ech.workers-${safeVersion}-universal.apk"
                 }
             }
+            println("Output filename: ${outputFileName}")
         }
     }
 }
