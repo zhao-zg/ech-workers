@@ -66,7 +66,24 @@ public class MainActivity extends Activity {
                 new Handler(Looper.getMainLooper()).post(() -> 
                     Toast.makeText(MainActivity.this, "应用崩溃: " + errorMsg, Toast.LENGTH_LONG).show()
                 );
-                
+            }
+        });
+        
+        Log.d(TAG, "onCreate: Starting");
+        try {
+            setContentView(R.layout.activity_main);
+            prefs = getSharedPreferences("profiles", MODE_PRIVATE);
+            
+            initViews();
+            loadProfiles();
+            setupListeners();
+            Log.d(TAG, "onCreate: Initialization completed");
+        } catch (Exception e) {
+            Log.e(TAG, "onCreate: Exception during initialization", e);
+            Toast.makeText(this, "初始化失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void initViews() {
         Log.d(TAG, "initViews: Starting");
         try {
@@ -81,17 +98,6 @@ public class MainActivity extends Activity {
         } catch (Exception e) {
             Log.e(TAG, "initViews: Failed to find views", e);
             throw e;
-        }
-    }       
-            prefs = getSharedPreferences("profiles", MODE_PRIVATE);
-            
-            initViews();
-            loadProfiles();
-            setupListeners();
-            Log.d(TAG, "onCreate: Initialization completed");
-        } catch (Exception e) {
-            Log.e(TAG, "onCreate: Exception during initialization", e);
-            Toast.makeText(this, "初始化失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
