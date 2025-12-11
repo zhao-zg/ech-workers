@@ -104,11 +104,21 @@ func StartSocksProxy(host, wsServer, dns, ech, ip, fallback, tkn string) error {
 		routingMode = "global"
 	}
 
-	if err := prepareECH(); err != nil {
-		return err
-	}
-
+	// 先启动SOCKS5代理服务器,不等待ECH配置
 	go runProxyServer(listenAddr)
+	log.Printf("[客户端] SOCKS5代理已启动在 %s", listenAddr)
+
+	// 在后台异步获取ECH配置,不阻塞服务启动
+	go func() {
+		log.Printf("[客户端] 后台获取ECH配置...")
+		if err := prepareECH(); err != nil {
+			log.Printf("[警告] ECH配置获取失败: %v", err)
+			log.Printf("[提示] SOCKS5代理可正常使用,但透明代理功能可能受限")
+		} else {
+			log.Printf("[客户端] ECH配置获取成功,透明代理功能已就绪")
+		}
+	}()
+
 	return nil
 }
 
@@ -404,24 +414,50 @@ func isNormalCloseError(err error) bool {
 const typeHTTPS = 65
 
 func prepareECH() error {
-	for {
+	maxRetries := 3 // 最多重试3次,不要无限循环
+	for i := 0; i < maxRetries; i++ {
+		if i > 0 {
+			log.Printf("[客户端] ECH查询重试 %d/%d", i+1, maxRetries)
+		}
 		log.Printf("[客户端] 使用 DNS 服务器查询 ECH: %s -> %s", dnsServer, echDomain)
 		echBase64, err := queryHTTPSRecord(echDomain, dnsServer)
 		if err != nil {
-			log.Printf("[客户端] DNS 查询失败: %v，2秒后重试...", err)
-			time.Sleep(2 * time.Second)
-			continue
+			log.Printf("[客户端] DNS 查询失败: %v", err)
+			if i < maxRetries-1 {
+				time.Sleep(2 * time.Second)
+				continue
+			}
+			// 最后一次重试失败,返回错误但不阻塞启动
+			log.Printf("[客户端] ECH查询失败,将在后台继续尝试")
+			go func() {
+				// 后台持续尝试
+				ticker := time.NewTicker(30 * time.Second)
+				defer ticker.Stop()
+				for range ticker.C {
+					if err := refreshECH(); err == nil {
+						log.Printf("[客户端] 后台ECH查询成功")
+						return
+					}
+				}
+			}()
+			return err
 		}
 		if echBase64 == "" {
-			log.Printf("[客户端] 未找到 ECH 参数，2秒后重试...")
-			time.Sleep(2 * time.Second)
-			continue
+			log.Printf("[客户端] 未找到 ECH 参数")
+			if i < maxRetries-1 {
+				time.Sleep(2 * time.Second)
+				continue
+			}
+			return errors.New("未找到ECH参数")
 		}
 		raw, err := base64.StdEncoding.DecodeString(echBase64)
 		if err != nil {
-			log.Printf("[客户端] ECH Base64 解码失败: %v，2秒后重试...", err)
-			time.Sleep(2 * time.Second)
-			continue
+			log.Printf("[客户端] ECH Base64 解码失败: %v", err)
+			if i < maxRetries-1 {
+				time.Sleep(2 * time.Second)
+				continue
+			}
+			return err
 		}
 		echListMu.Lock()
 		echList = raw
@@ -429,6 +465,7 @@ func prepareECH() error {
 		log.Printf("[客户端] ECHConfigList 长度: %d 字节", len(raw))
 		return nil
 	}
+	return errors.New("ECH查询失败")
 }
 
 func refreshECH() error {
@@ -504,26 +541,30 @@ func queryHTTPSRecord(domain, server string) (string, error) {
 
 // queryDoH 执行 DoH 查询（用于获取 ECH 配置）
 func queryDoH(domain, dohURL string) (string, error) {
-	// 备用 DoH 服务器列表(格式: URL|IP)
+	// 备用 DoH 服务器列表
+	// preferIP 为空时让系统DNS解析(适用于OpenWrt等环境)
 	dohServers := []struct {
 		url string
 		ip  string
 	}{
-		{dohURL, ""}, // 优先使用用户配置的服务器
-		{"https://dns.alidns.com/dns-query", "223.5.5.5"},
-		{"https://doh.pub/dns-query", "1.12.12.12"},
-		{"https://1.1.1.1/dns-query", "1.1.1.1"},
-		{"https://dns.google/dns-query", "8.8.8.8"},
+		{dohURL, ""},                                      // 优先使用用户配置的服务器
+		{"https://dns.alidns.com/dns-query", ""},         // 阿里DNS - 让系统解析
+		{"https://doh.pub/dns-query", ""},                // 腾讯DNS - 让系统解析
+		{"https://1.1.1.1/dns-query", "1.1.1.1"},        // Cloudflare - 使用IP
+		{"https://dns.google/dns-query", "8.8.8.8"},     // Google - 使用IP
 	}
 
 	var lastErr error
 	for i, server := range dohServers {
 		if i > 0 {
-			log.Printf("[DoH] 尝试备用服务器: %s", server.url)
+			log.Printf("[DoH] 尝试备用服务器: %s (IP: %s)", server.url, server.ip)
 		}
 		
 		result, err := doSingleDoHQuery(domain, server.url, server.ip)
 		if err == nil && result != "" {
+			if i > 0 {
+				log.Printf("[DoH] 备用服务器 %s 查询成功", server.url)
+			}
 			return result, nil
 		}
 		lastErr = err
@@ -537,6 +578,8 @@ func queryDoH(domain, dohURL string) (string, error) {
 
 // doSingleDoHQuery 执行单次 DoH 查询
 func doSingleDoHQuery(domain, dohURL, preferIP string) (string, error) {
+	log.Printf("[DoH调试] 开始查询: domain=%s, url=%s, ip=%s", domain, dohURL, preferIP)
+	
 	u, err := url.Parse(dohURL)
 	if err != nil {
 		return "", fmt.Errorf("无效的 DoH URL: %v", err)
@@ -551,15 +594,12 @@ func doSingleDoHQuery(domain, dohURL, preferIP string) (string, error) {
 
 	// 保存原始主机名用于 SNI 和 Host 头
 	originalHost := u.Host
+	actualDialAddr := originalHost
 	
-	// 如果提供了 IP,替换 URL 中的主机名
+	// 如果提供了 IP,使用IP作为连接地址,但保持域名用于SNI
 	if preferIP != "" {
-		// 移除端口号(如果有)
-		host := originalHost
-		if idx := strings.Index(host, ":"); idx != -1 {
-			host = host[:idx]
-		}
-		u.Host = preferIP
+		actualDialAddr = net.JoinHostPort(preferIP, "443")
+		log.Printf("[DoH调试] 使用IP地址: %s", actualDialAddr)
 	}
 
 	req, err := http.NewRequest("GET", u.String(), nil)
@@ -568,49 +608,97 @@ func doSingleDoHQuery(domain, dohURL, preferIP string) (string, error) {
 	}
 	
 	// 设置正确的 Host 头(使用原始域名,不是IP)
-	req.Host = originalHost
+	req.Host = strings.Split(originalHost, ":")[0]
 	req.Header.Set("Accept", "application/dns-message")
 	req.Header.Set("Content-Type", "application/dns-message")
+	
+	log.Printf("[DoH调试] 请求URL: %s", u.String())
+	log.Printf("[DoH调试] Host头: %s", req.Host)
 
-	// 创建自定义 Transport,支持 SNI
+	// 创建自定义 Transport
+	// 重要: 使用 http.ProxyFromEnvironment 支持系统代理(http_proxy/https_proxy环境变量)
 	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment, // 支持 HTTP_PROXY/HTTPS_PROXY/NO_PROXY 环境变量
 		TLSClientConfig: &tls.Config{
-			ServerName: strings.Split(originalHost, ":")[0], // 使用域名作为 SNI
+			ServerName:         strings.Split(originalHost, ":")[0],
+			InsecureSkipVerify: false,
 		},
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			// 如果使用了 IP,直接连接
+			// 优先使用系统DNS解析(适用于透明代理环境)
+			targetAddr := addr
 			if preferIP != "" {
-				addr = net.JoinHostPort(preferIP, "443")
+				// 如果提供了IP,尝试直接连接
+				targetAddr = actualDialAddr
 			}
+			
+			log.Printf("[DoH调试] 尝试连接: network=%s, addr=%s", network, targetAddr)
+			
 			d := &net.Dialer{
-				Timeout:   5 * time.Second,
+				Timeout:   8 * time.Second,  // 增加超时时间
 				KeepAlive: 30 * time.Second,
 			}
-			return d.DialContext(ctx, network, addr)
+			
+			conn, err := d.DialContext(ctx, network, targetAddr)
+			if err != nil {
+				log.Printf("[DoH调试] 连接失败: %v", err)
+				if preferIP != "" {
+					// 如果IP连接失败,回退到域名连接(让系统DNS解析或透明代理处理)
+					log.Printf("[DoH调试] IP连接失败 %s: %v, 回退到域名解析 %s", targetAddr, err, addr)
+					conn2, err2 := d.DialContext(ctx, network, addr)
+					if err2 != nil {
+						log.Printf("[DoH调试] 域名连接也失败: %v", err2)
+					} else {
+						log.Printf("[DoH调试] 域名连接成功")
+					}
+					return conn2, err2
+				}
+				return nil, err
+			}
+			log.Printf("[DoH调试] 连接成功")
+			return conn, nil
 		},
+		MaxIdleConns:        10,
+		IdleConnTimeout:     30 * time.Second,
+		DisableCompression:  true,
+		DisableKeepAlives:   false,
+		ForceAttemptHTTP2:   false,
 	}
 
 	client := &http.Client{
-		Timeout:   10 * time.Second,
+		Timeout:   15 * time.Second, // 增加总超时时间
 		Transport: transport,
 	}
 
+	log.Printf("[DoH调试] 发送HTTP请求...")
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Printf("[DoH调试] HTTP请求失败: %v", err)
 		return "", fmt.Errorf("DoH 请求失败: %v", err)
 	}
 	defer resp.Body.Close()
 
+	log.Printf("[DoH调试] 收到响应: Status=%d", resp.StatusCode)
+	
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("DoH 服务器返回错误: %d", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		log.Printf("[DoH调试] 错误响应body: %s", string(body))
+		return "", fmt.Errorf("DoH 服务器返回错误: %d, body: %s", resp.StatusCode, string(body))
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		log.Printf("[DoH调试] 读取响应失败: %v", err)
 		return "", fmt.Errorf("读取 DoH 响应失败: %v", err)
 	}
-
-	return parseDNSResponse(body)
+	
+	log.Printf("[DoH调试] 响应body长度: %d bytes", len(body))
+	result, err := parseDNSResponse(body)
+	if err != nil {
+		log.Printf("[DoH调试] 解析DNS响应失败: %v", err)
+	} else {
+		log.Printf("[DoH调试] 解析成功,结果长度: %d", len(result))
+	}
+	return result, err
 }
 
 func buildDNSQuery(domain string, qtype uint16) []byte {
