@@ -30,26 +30,26 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.24'
+        cache: true
     
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential libncurses5-dev gawk git \
-          libssl-dev gettext zlib1g-dev swig unzip time rsync python3 \
-          python3-setuptools python3-yaml
+    - name: Cache OpenWrt SDK
+      id: cache-sdk
+      uses: actions/cache@v4
+      with:
+        path: openwrt-sdk.tar.xz
+        key: openwrt-sdk-${{ matrix.target.arch }}-${{ hashFiles('.github/workflows/build-openwrt.yml') }}
     
     - name: Download OpenWrt SDK
+      if: steps.cache-sdk.outputs.cache-hit != 'true'
       run: |
-        wget -q ${{ matrix.target.sdk_url }}
-        tar -xf *.tar.xz
-        rm *.tar.xz
-        mv openwrt-sdk-* openwrt-sdk
+        wget -q ${{ matrix.target.sdk_url }} -O openwrt-sdk.tar.xz
     
-    - name: Update feeds
-      working-directory: ./openwrt-sdk
+    - name: Extract SDK and setup
       run: |
-        ./scripts/feeds update -a
-        ./scripts/feeds install -a
+        tar -xf openwrt-sdk.tar.xz
+        mv openwrt-sdk-* openwrt-sdk
+        # 只安装必需的依赖,避免 apt-get update
+        sudo apt-get install -y --no-install-recommends build-essential libncurses5-dev
     
     - name: Copy package files
       run: |
@@ -69,18 +69,23 @@ jobs:
     - name: Configure minimal build
       working-directory: ./openwrt-sdk
       run: |
-        # 创建最小配置以避免 menuconfig
-        echo "CONFIG_TARGET_x86=y" > .config
-        echo "CONFIG_TARGET_x86_64=y" >> .config
-        echo "CONFIG_TARGET_x86_64_DEVICE_generic=y" >> .config
+        # 创建最小配置
+        cat > .config <<EOF
+        CONFIG_TARGET_x86=y
+        CONFIG_TARGET_x86_64=y
+        CONFIG_TARGET_x86_64_DEVICE_generic=y
+        CONFIG_ALL_NONSHARED=n
+        CONFIG_ALL_KMODS=n
+        CONFIG_ALL=n
+        CONFIG_AUTOREMOVE=y
+        EOF
         make defconfig
     
     - name: Build packages
       working-directory: ./openwrt-sdk
       run: |
-        # 编译包
-        make package/ech-workers/compile V=s -j$(nproc)
-        make package/luci-app-ech-workers/compile V=s -j$(nproc)
+        # 同时编译两个包,减少make调用
+        make -j$(nproc) package/ech-workers/compile package/luci-app-ech-workers/compile
     
     - name: Find packages
       id: find_packages
