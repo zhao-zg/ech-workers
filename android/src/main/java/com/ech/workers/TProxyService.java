@@ -231,7 +231,7 @@ public class TProxyService extends VpnService {
                                 prefs.getEchDns(),
                                 prefs.getEchDomain(),
                                 prefs.getPrefIp(),
-                                "", // fallbackHosts 暂时为空，后续可添加UI配置
+                                prefs.getFallbackHosts(),
                                 prefs.getToken()
                         );
                 } catch (Exception e) {

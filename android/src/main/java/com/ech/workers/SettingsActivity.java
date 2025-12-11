@@ -62,15 +62,15 @@ public class SettingsActivity extends Activity {
         itemEchDomain = findViewById(R.id.item_ech_domain);
         itemToken = findViewById(R.id.item_token);
         itemRoutingMode = findViewById(R.id.item_routing_mode);
-        
+        itemFallbackHosts = findViewById(R.id.item_fallback_hosts);
+
         valueServerAddr = findViewById(R.id.value_server_addr);
         valueServerIp = findViewById(R.id.value_server_ip);
         valueDnsServer = findViewById(R.id.value_dns_server);
         valueEchDomain = findViewById(R.id.value_ech_domain);
         valueToken = findViewById(R.id.value_token);
         valueRoutingMode = findViewById(R.id.value_routing_mode);
-        
-        Button btnBack = findViewById(R.id.btn_back);
+        valueFallbackHosts = findViewById(R.id.value_fallback_hosts);        Button btnBack = findViewById(R.id.btn_back);
         Button btnSave = findViewById(R.id.btn_save);
         
         btnBack.setOnClickListener(v -> finish());
@@ -166,12 +166,14 @@ public class SettingsActivity extends Activity {
         String echDomain = prefs.getString(prefix + "ech_domain", "cloudflare-ech.com");
         String token = prefs.getString(prefix + "token", "");
         String routingMode = prefs.getString(prefix + "routing_mode", "bypass_cn");
+        String fallbackHosts = prefs.getString(prefix + "fallback_hosts", "");
         
         valueServerAddr.setText(serverAddr.isEmpty() ? getString(R.string.not_configured) : serverAddr);
         valueServerIp.setText(serverIp);
         valueDnsServer.setText(dnsServer);
         valueEchDomain.setText(echDomain);
         valueToken.setText(token.isEmpty() ? getString(R.string.optional) : "••••••");
+        valueFallbackHosts.setText(fallbackHosts.isEmpty() ? getString(R.string.optional) : fallbackHosts);
         
         String routingText = getString(R.string.bypass_cn);
         if ("global".equals(routingMode)) {

@@ -55,11 +55,12 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-Write-Host "`n✅ 版本 $Version 发布成功！" -ForegroundColor Green
+Write-Host "`n[成功] 版本 $Version 发布成功！" -ForegroundColor Green
 Write-Host "`nGitHub Actions 将自动构建以下内容：" -ForegroundColor Cyan
-Write-Host "  - Android APK (多架构)"
-Write-Host "  - OpenWrt IPK 包"
+Write-Host "  - Android APK (多架构)" -ForegroundColor White
+Write-Host "  - OpenWrt IPK 包" -ForegroundColor White
 Write-Host "`n查看构建进度：" -ForegroundColor Cyan
 Write-Host "  https://github.com/zhao-zg/ech-workers/actions" -ForegroundColor Blue
 Write-Host "`n查看 Release：" -ForegroundColor Cyan
 Write-Host "  https://github.com/zhao-zg/ech-workers/releases/tag/$Version" -ForegroundColor Blue
+
