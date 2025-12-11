@@ -46,7 +46,8 @@ jobs:
     - name: Build Go library
       working-directory: ./tunnel
       run: |
-        gomobile bind -target=android -androidapi=24 -o ../android/src/main/jniLibs/workers.aar
+        go mod download
+        gomobile bind -target=android -androidapi=24 -o ../android/src/main/jniLibs/workers.aar .
     
     - name: Cache Gradle packages
       uses: actions/cache@v4

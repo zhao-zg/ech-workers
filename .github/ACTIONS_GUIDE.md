@@ -167,8 +167,8 @@ git push origin v1.0.0
 可以在 README.md 中添加构建状态徽章：
 
 ```markdown
-![Android Build](https://github.com/YOUR_USERNAME/ech-workers/actions/workflows/build-android.yml/badge.svg)
-![OpenWrt Build](https://github.com/YOUR_USERNAME/ech-workers/actions/workflows/build-openwrt.yml/badge.svg)
+![Android Build](https://github.com/zhao-zg/ech-workers/actions/workflows/build-android.yml/badge.svg)
+![OpenWrt Build](https://github.com/zhao-zg/ech-workers/actions/workflows/build-openwrt.yml/badge.svg)
 ```
 
 ## 故障排除

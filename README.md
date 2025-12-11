@@ -1,7 +1,7 @@
 # ECH-Workers
 
-![Android Build](https://github.com/YOUR_USERNAME/ech-workers/actions/workflows/build-android.yml/badge.svg)
-![OpenWrt Build](https://github.com/YOUR_USERNAME/ech-workers/actions/workflows/build-openwrt.yml/badge.svg)
+![Android Build](https://github.com/zhao-zg/ech-workers/actions/workflows/build-android.yml/badge.svg)
+![OpenWrt Build](https://github.com/zhao-zg/ech-workers/actions/workflows/build-openwrt.yml/badge.svg)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 基于 Encrypted Client Hello (ECH) 的智能代理客户端，支持 Android 和 OpenWrt 平台。
@@ -62,7 +62,7 @@ ECH-Workers 是一个支持 ECH（加密客户端 Hello）的 SOCKS5/HTTP 代理
 
 **方式一：从 Release 下载（推荐）**
 
-前往 [Releases](https://github.com/YOUR_USERNAME/ech-workers/releases) 页面下载最新版本：
+前往 [Releases](https://github.com/zhao-zg/ech-workers/releases) 页面下载最新版本：
 
 Android:
 - `ech-workers-signed.apk` - 已签名版本（推荐）
@@ -220,34 +220,32 @@ A: Android 会自动每 7 天更新；OpenWrt 可在 LuCI 界面手动更新。
 ### Q: 支持哪些架构？
 A: Android (arm, arm64, x86, x86_64); OpenWrt (所有架构)
 
-更多问题请查看 [Wiki](https://github.com/your-repo/ech-workers/wiki)
-
 ## 贡献
 
 欢迎提交 Issue 和 Pull Request！
 
 ### 开发指南
 
-1. Fork 本项目
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
+1. Fork 项目
+2. 创建特性分支 (`git checkout -b feature/amazing-feature`)
+3. 提交更改 (`git commit -m 'Add amazing feature'`)
+4. 推送到分支 (`git push origin feature/amazing-feature`)
+5. 创建 Pull Request
 
 ## 许可证
 
-本项目采用 GPL-3.0 许可证 - 详见 [LICENSE](LICENSE) 文件
+本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
 
 ## 致谢
 
-- [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel) - Android VPN 隧道实现
-- [mayaxcn/china-ip-list](https://github.com/mayaxcn/china-ip-list) - 中国 IP 列表数据源
-- [Cloudflare](https://www.cloudflare.com/) - Workers 平台和 ECH 支持
-- [OpenWrt](https://openwrt.org/) - 路由器系统
+- [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel) - Android 隧道实现
+- [Cloudflare](https://www.cloudflare.com/) - ECH 支持和 Workers 平台
+- [OpenWrt](https://openwrt.org/) - 开源路由器系统
 
-## 免责声明
+## 联系方式
 
-本项目仅供学习和研究使用。请遵守当地法律法规，不得用于非法用途。
+- GitHub: [@zhao-zg](https://github.com/zhao-zg)
+- Issues: [提交问题](https://github.com/zhao-zg/ech-workers/issues)
 
 ## 联系方式
 

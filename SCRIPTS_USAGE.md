@@ -51,8 +51,8 @@ git branch -M main
 git add .
 git commit -m "Initial commit"
 
-# Add remote repository (replace with your URL)
-git remote add origin https://github.com/YOUR_USERNAME/ech-workers.git
+# Add remote repository
+git remote add origin https://github.com/zhao-zg/ech-workers.git
 
 # Push to GitHub
 git push -u origin main
@@ -99,20 +99,19 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 ```bash
 # Update remote URL
-git remote set-url origin https://github.com/YOUR_USERNAME/ech-workers.git
+git remote set-url origin https://github.com/zhao-zg/ech-workers.git
 
 # Or remove and re-add
 git remote remove origin
-git remote add origin https://github.com/YOUR_USERNAME/ech-workers.git
+git remote add origin https://github.com/zhao-zg/ech-workers.git
 ```
 
 ## Next Steps
 
 After uploading:
 
-1. **Update README**: Replace `YOUR_USERNAME` with your GitHub username
-2. **Configure Secrets**: Add keystore secrets for APK signing (optional)
+1. **Configure Secrets**: Add keystore secrets for APK signing (optional)
 3. **Create Release**: Push a tag to trigger automatic builds
 4. **Star Project**: Give your project a star!
 
-For more details, see [UPLOAD_GUIDE.md](UPLOAD_GUIDE.md)
+For more details, see [GitHub Actions Guide](.github/ACTIONS_GUIDE.md)

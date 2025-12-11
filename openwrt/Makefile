@@ -7,20 +7,17 @@ PKG_NAME:=ech-workers
 PKG_VERSION:=1.1.0
 PKG_RELEASE:=1
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/your-repo/ech-workers.git
-PKG_SOURCE_VERSION:=HEAD
-PKG_MIRROR_HASH:=skip
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 
-PKG_LICENSE:=GPL-3.0
+PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
-PKG_MAINTAINER:=ECH Workers Team
+PKG_MAINTAINER:=zhao-zg
 
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
 
-GO_PKG:=github.com/your-repo/ech-workers
+GO_PKG:=github.com/zhao-zg/ech-workers/tunnel
 GO_PKG_BUILD_PKG:=$(GO_PKG)
 GO_PKG_LDFLAGS_X:=main.version=$(PKG_VERSION)
 
@@ -32,7 +29,7 @@ define Package/ech-workers
   CATEGORY:=Network
   SUBMENU:=Web Servers/Proxies
   TITLE:=ECH-enabled SOCKS5/HTTP proxy with intelligent routing
-  URL:=https://github.com/your-repo/ech-workers
+  URL:=https://github.com/zhao-zg/ech-workers
   DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle +iptables +ip-full +kmod-tun
 endef
 
@@ -53,6 +50,11 @@ endef
 define Package/ech-workers/conffiles
 /etc/config/ech-workers
 /etc/ech-workers/
+endef
+
+define Build/Prepare
+	mkdir -p $(PKG_BUILD_DIR)
+	$(CP) ./src/* $(PKG_BUILD_DIR)/
 endef
 
 define Build/Compile

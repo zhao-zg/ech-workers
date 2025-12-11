@@ -54,11 +54,17 @@ jobs:
     - name: Copy package files
       run: |
         mkdir -p openwrt-sdk/package/ech-workers
-        cp -r openwrt/* openwrt-sdk/package/ech-workers/
         
-        # Copy Go source
-        mkdir -p openwrt-sdk/package/ech-workers/cmd/ech-workers
-        cp -r tunnel/* openwrt-sdk/package/ech-workers/cmd/ech-workers/
+        # Copy OpenWrt package files
+        cp -r openwrt/Makefile openwrt/files openwrt-sdk/package/ech-workers/
+        
+        # Copy LuCI app
+        mkdir -p openwrt-sdk/package/luci-app-ech-workers
+        cp -r openwrt/luci-app-ech-workers/* openwrt-sdk/package/luci-app-ech-workers/
+        
+        # Copy Go source with module files
+        mkdir -p openwrt-sdk/package/ech-workers/src
+        cp -r tunnel/* openwrt-sdk/package/ech-workers/src/
     
     - name: Configure package
       working-directory: ./openwrt-sdk
