@@ -107,6 +107,13 @@ android {
         }
 
 signingConfigs {
+    debug {
+        // 使用固定的 debug 签名,确保可以覆盖安装
+        storeFile file("debug.keystore")
+        storePassword "android"
+        keyAlias "androiddebugkey"
+        keyPassword "android"
+    }
     release {
         if (rootProject.file('store.properties').exists()) {
             def props = new Properties()
@@ -126,7 +133,7 @@ signingConfigs {
                 }
                 debug {
                         minifyEnabled false
-                        // Debug builds use default debug signing
+                        signingConfig signingConfigs.debug
                 }
         }
 
