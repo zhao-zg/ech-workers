@@ -73,7 +73,18 @@ jobs:
       run: |
         export PATH=$PATH:$(go env GOPATH)/bin
         cd mobile
-        gomobile bind -v -target=android -androidapi=24 -o ../android/ech-workers.aar .
+        echo "Building AAR with gomobile..."
+        gomobile bind -v -target=android -androidapi=24 -o ../android/ech-workers.aar . || {
+          echo "gomobile bind failed with exit code $?"
+          exit 1
+        }
+        echo "gomobile bind completed successfully"
+        cd ..
+        ls -lh android/ech-workers.aar || {
+          echo "AAR file was not created"
+          ls -la android/
+          exit 1
+        }
         
     - name: Verify AAR file
       run: |
