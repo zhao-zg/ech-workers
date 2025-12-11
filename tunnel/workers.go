@@ -782,7 +782,14 @@ func handleConnection(conn net.Conn) {
 	clientAddr := conn.RemoteAddr().String()
 	conn.SetDeadline(time.Now().Add(30 * time.Second))
 
-	// 读取第一个字节判断协议
+	// 尝试获取透明代理的原始目标地址
+	if origDest, err := getOriginalDest(conn); err == nil {
+		// 透明代理模式：直接转发原始流量
+		handleTransparentProxy(conn, clientAddr, origDest)
+		return
+	}
+
+	// 非透明代理模式：读取第一个字节判断协议
 	buf := make([]byte, 1)
 	n, err := conn.Read(buf)
 	if err != nil || n == 0 {
@@ -801,6 +808,58 @@ func handleConnection(conn net.Conn) {
 		handleHTTP(conn, clientAddr, firstByte)
 	default:
 		log.Printf("[代理] %s 未知协议: 0x%02x", clientAddr, firstByte)
+	}
+}
+
+// ======================== 透明代理支持 ========================
+
+// getOriginalDest 获取透明代理的原始目标地址（Linux SO_ORIGINAL_DST）
+func getOriginalDest(conn net.Conn) (string, error) {
+	tcpConn, ok := conn.(*net.TCPConn)
+	if !ok {
+		return "", fmt.Errorf("not a TCP connection")
+	}
+
+	// 获取底层文件描述符
+	rawConn, err := tcpConn.SyscallConn()
+	if err != nil {
+		return "", err
+	}
+
+	var addr string
+	var getErr error
+	
+	// 在 Linux 上使用 SO_ORIGINAL_DST
+	err = rawConn.Control(func(fd uintptr) {
+		addr, getErr = getOriginalDestFromFd(fd)
+	})
+	
+	if err != nil {
+		return "", err
+	}
+	if getErr != nil {
+		return "", getErr
+	}
+	
+	return addr, nil
+}
+
+// getOriginalDestFromFd 从文件描述符获取原始目标地址
+// 此函数仅在 Linux 上有效，在其他平台会返回错误
+func getOriginalDestFromFd(fd uintptr) (string, error) {
+	// 仅在 Linux 上支持透明代理
+	// 在 Windows/Mac 上会编译但返回错误
+	return getOriginalDestLinux(fd)
+}
+
+// handleTransparentProxy 处理透明代理连接
+func handleTransparentProxy(conn net.Conn, clientAddr, target string) {
+	log.Printf("[透明代理] %s -> %s", clientAddr, target)
+
+	// 直接使用 handleTunnel，mode 设为特殊值表示透明代理
+	// 透明代理模式下，客户端发送的第一帧就是应用数据，不需要读取 SOCKS5 握手
+	if err := handleTunnel(conn, target, clientAddr, modeTransparent, ""); err != nil {
+		log.Printf("[透明代理] %s 代理失败: %v", clientAddr, err)
 	}
 }
 
@@ -1193,6 +1252,7 @@ const (
 	modeSOCKS5      = 1 // SOCKS5 代理
 	modeHTTPConnect = 2 // HTTP CONNECT 隧道
 	modeHTTPProxy   = 3 // HTTP 普通代理（GET/POST等）
+	modeTransparent = 4 // 透明代理（iptables REDIRECT）
 )
 
 func handleTunnel(conn net.Conn, target, clientAddr string, mode int, firstFrame string) error {
@@ -1239,8 +1299,9 @@ func handleTunnel(conn net.Conn, target, clientAddr string, mode int, firstFrame
 
 	conn.SetDeadline(time.Time{})
 
-	// 如果没有预设的 firstFrame，尝试读取第一帧数据（仅 SOCKS5）
-	if firstFrame == "" && mode == modeSOCKS5 {
+	// 如果没有预设的 firstFrame，尝试读取第一帧数据
+	// SOCKS5 模式会尝试读取，透明代理模式也需要读取第一帧应用数据
+	if firstFrame == "" && (mode == modeSOCKS5 || mode == modeTransparent) {
 		_ = conn.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
 		buffer := make([]byte, 32768)
 		n, _ := conn.Read(buffer)
@@ -1408,6 +1469,9 @@ func sendErrorResponse(conn net.Conn, mode int) {
 		conn.Write([]byte{0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
 	case modeHTTPConnect, modeHTTPProxy:
 		conn.Write([]byte("HTTP/1.1 502 Bad Gateway\r\n\r\n"))
+	case modeTransparent:
+		// 透明代理模式下，直接关闭连接，不发送任何响应
+		// 因为客户端不知道被代理，发送任何数据都会导致协议错误
 	}
 }
 
@@ -1423,6 +1487,9 @@ func sendSuccessResponse(conn net.Conn, mode int) error {
 		return err
 	case modeHTTPProxy:
 		// HTTP GET/POST 等不需要发送响应，直接转发目标服务器的响应
+		return nil
+	case modeTransparent:
+		// 透明代理模式不需要发送任何响应，直接开始转发数据
 		return nil
 	}
 	return nil

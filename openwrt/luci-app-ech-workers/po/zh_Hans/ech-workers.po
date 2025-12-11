@@ -199,6 +199,9 @@ msgstr "从未"
 msgid "Downloading..."
 msgstr "下载中..."
 
+msgid "Latency"
+msgstr "延迟"
+
 msgid "Download failed"
 msgstr "下载失败"
 

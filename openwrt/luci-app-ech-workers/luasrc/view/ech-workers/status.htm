@@ -1,5 +1,16 @@
 <%+cbi/valueheader%>
 
+<div id="service_status_container">
+	<div id="service_status"><%:Checking...%></div>
+	<div id="connection_info" style="margin-top: 10px; display: none;">
+		<div style="display: flex; align-items: center; margin-bottom: 5px;">
+			<img id="country_flag" src="" alt="" style="width: 32px; height: 24px; margin-right: 10px; display: none;"/>
+			<span id="ip_address"></span>
+		</div>
+		<div id="latency_info"></div>
+	</div>
+</div>
+
 <script type="text/javascript">
 	function updateStatus() {
 		XHR.get('<%=luci.dispatcher.build_url("admin", "services", "ech-workers", "status")%>', null,
@@ -10,9 +21,33 @@
 				if (result.running) {
 					statusText = '<%:Running%>';
 					statusColor = 'green';
+					
+					// 显示连接信息
+					document.getElementById('connection_info').style.display = 'block';
+					
+					// 显示IP地址
+					if (result.ip) {
+						document.getElementById('ip_address').innerHTML = '<strong>IP:</strong> ' + result.ip;
+					}
+					
+					// 显示国旗（如果有国家代码）
+					if (result.country) {
+						var flagImg = document.getElementById('country_flag');
+						flagImg.src = 'https://flagcdn.com/24x18/' + result.country.toLowerCase() + '.png';
+						flagImg.style.display = 'inline';
+						flagImg.alt = result.country;
+					}
+					
+					// 显示延迟
+					if (result.latency) {
+						document.getElementById('latency_info').innerHTML = '<strong><%:Latency%>:</strong> ' + result.latency + ' ms';
+					} else {
+						document.getElementById('latency_info').innerHTML = '<strong><%:Latency%>:</strong> <%:Testing...%>';
+					}
 				} else {
 					statusText = '<%:Not running%>';
 					statusColor = 'red';
+					document.getElementById('connection_info').style.display = 'none';
 				}
 				
 				var statusHtml = '<span style="color: ' + statusColor + '; font-weight: bold;">' + statusText + '</span>';
@@ -30,9 +65,33 @@
 			if (result.running) {
 				statusText = '<%:Running%>';
 				statusColor = 'green';
+				
+				// 显示连接信息
+				document.getElementById('connection_info').style.display = 'block';
+				
+				// 显示IP地址
+				if (result.ip) {
+					document.getElementById('ip_address').innerHTML = '<strong>IP:</strong> ' + result.ip;
+				}
+				
+				// 显示国旗（如果有国家代码）
+				if (result.country) {
+					var flagImg = document.getElementById('country_flag');
+					flagImg.src = 'https://flagcdn.com/24x18/' + result.country.toLowerCase() + '.png';
+					flagImg.style.display = 'inline';
+					flagImg.alt = result.country;
+				}
+				
+				// 显示延迟
+				if (result.latency) {
+					document.getElementById('latency_info').innerHTML = '<strong><%:Latency%>:</strong> ' + result.latency + ' ms';
+				} else {
+					document.getElementById('latency_info').innerHTML = '<strong><%:Latency%>:</strong> <%:Testing...%>';
+				}
 			} else {
 				statusText = '<%:Not running%>';
 				statusColor = 'red';
+				document.getElementById('connection_info').style.display = 'none';
 			}
 			
 			var statusHtml = '<span style="color: ' + statusColor + '; font-weight: bold;">' + statusText + '</span>';
@@ -40,7 +99,5 @@
 		}
 	);
 </script>
-
-<div id="service_status"><%:Checking...%></div>
 
 <%+cbi/valuefooter%>

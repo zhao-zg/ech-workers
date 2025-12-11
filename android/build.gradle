@@ -16,8 +16,11 @@ def getVersionName() {
         exec {
             commandLine 'git', 'describe', '--tags', '--always'
             standardOutput = stdout
+            workingDir projectDir.parent
+            ignoreExitValue = true
         }
-        return stdout.toString().trim().replaceAll('^v', '')
+        def version = stdout.toString().trim().replaceAll('^v', '')
+        return version.isEmpty() ? "1.0.0" : version
     } catch (Exception e) {
         return "1.0.0"
     }
@@ -29,8 +32,11 @@ def getVersionCode() {
         exec {
             commandLine 'git', 'rev-list', '--count', 'HEAD'
             standardOutput = stdout
+            workingDir projectDir.parent
+            ignoreExitValue = true
         }
-        return Integer.parseInt(stdout.toString().trim())
+        def count = stdout.toString().trim()
+        return count.isEmpty() ? 1 : Integer.parseInt(count)
     } catch (Exception e) {
         return 1
     }

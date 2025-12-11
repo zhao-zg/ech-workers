@@ -20,9 +20,37 @@ end
 
 function action_status()
 	local sys = require "luci.sys"
+	local uci = require "luci.model.uci".cursor()
 	local status = {
 		running = sys.call("pgrep -f /usr/bin/ech-workers >/dev/null") == 0
 	}
+	
+	-- 如果服务运行中，获取IP、国家和延迟
+	if status.running then
+		-- 获取优选IP用于测延迟
+		local server_ip = uci:get("ech-workers", "main", "server_ip") or "mfa.gov.ua"
+		
+		-- 测试延迟
+		local latency_cmd = string.format(
+			"timeout 5 sh -c 'start=$(date +%%s%%N); nc -z -w 3 %s 443 && echo $(($(date +%%s%%N)-start))/1000000 | bc' 2>/dev/null",
+			server_ip
+		)
+		local latency_result = sys.exec(latency_cmd):match("^%s*(.-)%s*$")
+		if latency_result and latency_result ~= "" then
+			status.latency = tonumber(latency_result)
+		end
+		
+		-- 获取出口IP和国家（使用ipapi.co）
+		local ip_info = sys.exec("timeout 5 wget -qO- https://ipapi.co/json/ 2>/dev/null")
+		if ip_info and ip_info ~= "" then
+			local json = require "luci.jsonc"
+			local info = json.parse(ip_info)
+			if info then
+				status.ip = info.ip
+				status.country = info.country_code
+			end
+		end
+	end
 	
 	-- 检查 IP 列表状态
 	local ipv4_file = "/etc/ech-workers/chn_ip.txt"

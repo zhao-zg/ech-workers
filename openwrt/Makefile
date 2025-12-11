@@ -23,7 +23,7 @@ define Package/ech-workers
   SUBMENU:=Web Servers/Proxies
   TITLE:=ECH-enabled SOCKS5/HTTP proxy with intelligent routing
   URL:=https://github.com/zhao-zg/ech-workers
-  DEPENDS:=+redsocks +ipset +iptables-mod-nat-extra
+  DEPENDS:=+ipset +iptables +kmod-ipt-nat
 endef
 
 define Package/ech-workers/description
