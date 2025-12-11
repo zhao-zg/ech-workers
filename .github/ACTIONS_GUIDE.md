@@ -14,7 +14,7 @@
 
 **构建步骤:**
 1. 设置 JDK 17 环境
-2. 设置 Go 1.23 环境
+2. 设置 Go 1.24 环境
 3. 安装 Android SDK 和 NDK 26.3.11579264
 4. 安装 gomobile 并初始化
 5. 编译 Go 库为 Android AAR
@@ -41,7 +41,7 @@
 - mipsel_24kc - MIPS 平台（常见于路由器）
 
 **构建步骤:**
-1. 设置 Go 1.23 环境
+1. 设置 Go 1.24 环境
 2. 下载 OpenWrt SDK
 3. 更新 feeds
 4. 复制软件包源代码
@@ -176,7 +176,7 @@ git push origin v1.0.0
 ### Android 构建失败
 
 1. **NDK 版本问题**: 确保 NDK 版本为 26.3.11579264
-2. **Go 版本问题**: 确保使用 Go 1.23+
+2. **Go 版本问题**: 确保使用 Go 1.24+
 3. **gomobile 问题**: 检查 gomobile bind 命令输出
 
 ### OpenWrt 构建失败

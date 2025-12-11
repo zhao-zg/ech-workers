@@ -28,7 +28,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.23'
+        go-version: '1.24'
         cache: true
     
     - name: Setup Android SDK
@@ -49,7 +49,7 @@ jobs:
         go install golang.org/x/mobile/cmd/gomobile@latest
         go install golang.org/x/mobile/cmd/gobind@latest
         export PATH=$PATH:$(go env GOPATH)/bin
-        gomobile init -ndk $ANDROID_NDK_HOME
+        gomobile init
     
     - name: Build Go library
       run: |

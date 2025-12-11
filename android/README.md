@@ -201,7 +201,7 @@ adb logcat -d > ech-workers.log
 
 - Android SDK 34
 - NDK 26.3.11579264
-- Go 1.23+ (支持 ECH)
+- Go 1.24+ (支持 ECH)
 - Gradle 8.0+
 - JDK 17
 

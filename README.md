@@ -193,10 +193,10 @@ cd openwrt
 
 ## 技术栈
 
-- **前端**: Cloudflare Workers (JavaScript)
+- **服务端**: Cloudflare Workers (JavaScript)
 - **Android**: Java + Go (gomobile)
 - **OpenWrt**: Go + Lua (LuCI)
-- **核心**: Go 1.23+ (ECH 支持)
+- **核心**: Go 1.24+ (ECH 支持)
 - **协议**: TLS 1.3, WebSocket, SOCKS5, HTTP
 
 ## 性能指标
@@ -209,7 +209,7 @@ cd openwrt
 ## 常见问题
 
 ### Q: ECH 连接失败？
-A: 确保使用 Go 1.23+ 编译，并且服务端支持 ECH。
+A: 确保使用 Go 1.24+ 编译，并且服务端支持 ECH.
 
 ### Q: 跳过中国大陆模式不生效？
 A: 检查 IP 列表是否已下载，查看日志确认加载状态。
