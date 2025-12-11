@@ -47,9 +47,13 @@ jobs:
     - name: Install gomobile
       run: |
         export PATH=$PATH:$(go env GOPATH)/bin
+        # Install gomobile and gobind
         go install golang.org/x/mobile/cmd/gomobile@latest
         go install golang.org/x/mobile/cmd/gobind@latest
+        # Initialize gomobile and download dependencies
         gomobile init
+        # Verify bind package is available
+        go get golang.org/x/mobile/bind
         echo "Gomobile initialized successfully"
     
     - name: Prepare Go module
