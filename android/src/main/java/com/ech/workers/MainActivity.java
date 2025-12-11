@@ -74,8 +74,12 @@ public class MainActivity extends Activity {
         
         Log.d(TAG, "onCreate: Starting");
         try {
+            Log.d(TAG, "onCreate: Setting content view");
             setContentView(R.layout.activity_main);
+            Log.d(TAG, "onCreate: Content view set successfully");
+            
             prefs = getSharedPreferences("profiles", MODE_PRIVATE);
+            Log.d(TAG, "onCreate: SharedPreferences initialized");
             
             initViews();
             loadProfiles();
@@ -83,7 +87,15 @@ public class MainActivity extends Activity {
             Log.d(TAG, "onCreate: Initialization completed");
         } catch (Exception e) {
             Log.e(TAG, "onCreate: Exception during initialization", e);
+            e.printStackTrace();
             Toast.makeText(this, "初始化失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            
+            // 显示详细错误信息
+            String detailMsg = e.getClass().getName() + ": " + e.getMessage();
+            if (e.getCause() != null) {
+                detailMsg += "\nCause: " + e.getCause().getMessage();
+            }
+            Log.e(TAG, "onCreate: Detailed error: " + detailMsg);
         }
     }
 
@@ -113,63 +125,85 @@ public class MainActivity extends Activity {
     }
 
     private void loadProfiles() {
-        Set<String> profileSet = prefs.getStringSet("profile_list", new HashSet<>());
-        profiles = new ArrayList<>(profileSet);
-        
-        if (profiles.isEmpty()) {
-            profiles.add(getString(R.string.default_profile_name));
-            Set<String> newSet = new HashSet<>(profiles);
-            prefs.edit().putStringSet("profile_list", newSet).apply();
-        }
-        
-        profileAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, profiles);
-        profileAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        profileSpinner.setAdapter(profileAdapter);
-        
-        String lastProfile = prefs.getString("last_profile", profiles.get(0));
-        int position = profiles.indexOf(lastProfile);
-        if (position >= 0) {
-            profileSpinner.setSelection(position);
-            currentProfile = lastProfile;
+        Log.d(TAG, "loadProfiles: Starting");
+        try {
+            if (profileSpinner == null) {
+                Log.e(TAG, "loadProfiles: profileSpinner is null!");
+                return;
+            }
+            
+            Set<String> profileSet = prefs.getStringSet("profile_list", new HashSet<>());
+            profiles = new ArrayList<>(profileSet);
+            Log.d(TAG, "loadProfiles: Loaded " + profiles.size() + " profiles");
+            
+            if (profiles.isEmpty()) {
+                profiles.add(getString(R.string.default_profile_name));
+                Set<String> newSet = new HashSet<>(profiles);
+                prefs.edit().putStringSet("profile_list", newSet).apply();
+                Log.d(TAG, "loadProfiles: Created default profile");
+            }
+            
+            profileAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, profiles);
+            profileAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            profileSpinner.setAdapter(profileAdapter);
+            Log.d(TAG, "loadProfiles: Adapter set");
+            
+            String lastProfile = prefs.getString("last_profile", profiles.get(0));
+            int position = profiles.indexOf(lastProfile);
+            if (position >= 0) {
+                profileSpinner.setSelection(position);
+                currentProfile = lastProfile;
+                Log.d(TAG, "loadProfiles: Selected profile: " + currentProfile);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "loadProfiles: Exception", e);
+            throw e;
         }
     }
 
     private void setupListeners() {
-        profileSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                currentProfile = profiles.get(position);
-                prefs.edit().putString("last_profile", currentProfile).apply();
+        Log.d(TAG, "setupListeners: Starting");
+        try {
+            profileSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    currentProfile = profiles.get(position);
+                    prefs.edit().putString("last_profile", currentProfile).apply();
+                    
+                    if (isRunning) {
+                        stopService();
+                    }
+                    updateUI();
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {}
+            });
+
+            btnSettings.setOnClickListener(v -> {
+                Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+                startActivity(intent);
+            });
+
+            btnToggle.setOnClickListener(v -> {
+                if (!hasValidConfig()) {
+                    Toast.makeText(this, R.string.no_profile_configured, Toast.LENGTH_LONG).show();
+                    Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+                    startActivity(intent);
+                    return;
+                }
                 
                 if (isRunning) {
                     stopService();
+                } else {
+                    startService();
                 }
-                updateUI();
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
-
-        btnSettings.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-            startActivity(intent);
-        });
-
-        btnToggle.setOnClickListener(v -> {
-            if (!hasValidConfig()) {
-                Toast.makeText(this, R.string.no_profile_configured, Toast.LENGTH_LONG).show();
-                Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-                startActivity(intent);
-                return;
-            }
-            
-            if (isRunning) {
-                stopService();
-            } else {
-                startService();
-            }
-        });
+            });
+            Log.d(TAG, "setupListeners: Completed");
+        } catch (Exception e) {
+            Log.e(TAG, "setupListeners: Exception", e);
+            throw e;
+        }
     }
 
     private boolean hasValidConfig() {
@@ -280,24 +314,36 @@ public class MainActivity extends Activity {
     }
     
     private void updateUI() {
-        if (isRunning) {
-            statusText.setText(R.string.connected);
-            btnToggle.setText(R.string.stop_service);
-            btnToggle.setEnabled(true);
-            flagIcon.setVisibility(View.VISIBLE);
-            ipText.setVisibility(View.VISIBLE);
-            latencyText.setVisibility(View.VISIBLE);
+        Log.d(TAG, "updateUI: isRunning=" + isRunning);
+        try {
+            if (statusText == null || btnToggle == null || flagIcon == null || 
+                ipText == null || latencyText == null) {
+                Log.e(TAG, "updateUI: Some views are null!");
+                return;
+            }
             
-            // 获取真实 IP 和国家信息
-            fetchIpInfo();
-        } else {
-            statusText.setText(R.string.not_connected);
-            btnToggle.setText(R.string.start_service);
-            btnToggle.setEnabled(true);
-            flagIcon.setVisibility(View.GONE);
-            ipText.setVisibility(View.GONE);
-            latencyText.setVisibility(View.GONE);
-            latencyText.setText("");
+            if (isRunning) {
+                statusText.setText(R.string.connected);
+                btnToggle.setText(R.string.stop_service);
+                btnToggle.setEnabled(true);
+                flagIcon.setVisibility(View.VISIBLE);
+                ipText.setVisibility(View.VISIBLE);
+                latencyText.setVisibility(View.VISIBLE);
+                
+                // 获取真实 IP 和国家信息
+                fetchIpInfo();
+            } else {
+                statusText.setText(R.string.not_connected);
+                btnToggle.setText(R.string.start_service);
+                btnToggle.setEnabled(true);
+                flagIcon.setVisibility(View.GONE);
+                ipText.setVisibility(View.GONE);
+                latencyText.setVisibility(View.GONE);
+                latencyText.setText("");
+            }
+            Log.d(TAG, "updateUI: Completed");
+        } catch (Exception e) {
+            Log.e(TAG, "updateUI: Exception", e);
         }
     }
 
