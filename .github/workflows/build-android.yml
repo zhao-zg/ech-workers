@@ -94,6 +94,7 @@ jobs:
           exit 1
         fi
         echo "AAR file found: $(ls -lh android/ech-workers.aar)"
+        echo "AAR file size: $(stat -c%s android/ech-workers.aar) bytes"
     
     - name: Cache Gradle packages
       uses: actions/cache@v4
@@ -105,14 +106,30 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
     
+    - name: Clean Gradle cache for AAR
+      run: |
+        cd android
+        rm -rf .gradle/
+        ./gradlew clean --no-daemon
+    
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
       with:
         gradle-version: 8.5
     
+    - name: Verify AAR before build
+      run: |
+        echo "Checking AAR file before Gradle build..."
+        ls -lh android/ech-workers.aar
+        echo "Contents of android directory:"
+        ls -la android/
+        echo "Gradle will look for AAR in: $(cd android && pwd)"
+    
     - name: Build APK
       working-directory: ./android
       run: |
+        echo "Building APK with Gradle..."
+        gradle assembleRelease --stacktrace --info | grep -E "ech-workers|dependency|Could not find" || true
         gradle assembleRelease --stacktrace
     
     - name: Sign APK
