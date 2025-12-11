@@ -13,6 +13,7 @@
         <string name="ech_dns">ECH DOH 服务器：</string>
         <string name="ech_domain">ECH 公钥查询域名：</string>
         <string name="pref_ip">优选IP（域名）：</string>
+        <string name="fallback_hosts">反代Host（可选）：</string>
         <string name="token">身份令牌：</string>
         
         <!-- Routing Mode -->

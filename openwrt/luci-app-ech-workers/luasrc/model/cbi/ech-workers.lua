@@ -50,6 +50,10 @@ o = s:option(Value, "server_ip", translate("Preferred IP (domain name)"),
 o.default = "mfa.gov.ua"
 o.placeholder = "mfa.gov.ua"
 
+o = s:option(Value, "fallback_hosts", translate("Fallback Hosts"),
+	translate("Optional: Specify fallback host for Workers to connect to target servers (IP or domain)"))
+o.placeholder = "example.com"
+
 o = s:option(Value, "token", translate("Authentication Token"),
 	translate("Optional: Token for server authentication"))
 o.password = true

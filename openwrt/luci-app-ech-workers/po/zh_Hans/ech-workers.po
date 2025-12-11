@@ -52,6 +52,12 @@ msgstr "优选IP（域名）"
 msgid "Optional: Specify the server IP or domain name to bypass DNS resolution"
 msgstr "可选：指定服务器IP或域名以绕过DNS解析"
 
+msgid "Fallback Hosts"
+msgstr "反代Host"
+
+msgid "Optional: Specify fallback host for Workers to connect to target servers (IP or domain)"
+msgstr "可选：指定Workers连接目标服务器的反代Host（IP或域名）"
+
 msgid "Authentication Token"
 msgstr "身份令牌"
 

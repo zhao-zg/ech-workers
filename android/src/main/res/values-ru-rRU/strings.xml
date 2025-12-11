@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-	<string name="app_name">SocksTun</string>
+	<string name="app_name">ECH-Workers</string>
 	<string name="socks_port">Порт Socks:</string>
 	<string name="ipv4">IPv4</string>
 	<string name="ipv6">IPv6</string>
@@ -9,4 +9,29 @@
 	<string name="save">Сохранить</string>
 	<string name="control_enable">Включить</string>
 	<string name="control_disable">Отключить</string>
+	<string name="wss_addr">Адрес сервера (домен:порт):</string>
+	<string name="ech_dns">ECH DoH сервер:</string>
+	<string name="ech_domain">ECH домен запроса:</string>
+	<string name="pref_ip">Предпочтительный IP (домен):</string>
+	<string name="fallback_hosts">Резервный Host (опционально):</string>
+	<string name="token">Токен авторизации:</string>
+	<string name="routing_mode">Режим маршрутизации:</string>
+	<string name="routing_mode_global">Глобальный прокси</string>
+	<string name="routing_mode_bypass_cn">Обход Китая</string>
+	<string name="routing_mode_none">Прямое подключение</string>
+	<string name="profile_label">Профиль:</string>
+	<string name="btn_add">Добавить</string>
+	<string name="btn_rename">Переименовать</string>
+	<string name="btn_delete">Удалить</string>
+	<string name="default_profile_name">Профиль по умолчанию</string>
+	<string name="dialog_title_add">Добавить профиль</string>
+	<string name="dialog_title_rename">Переименовать профиль</string>
+	<string name="dialog_title_delete">Подтвердить удаление?</string>
+	<string name="dialog_hint_name">Имя профиля</string>
+	<string name="toast_profile_exists">Профиль уже существует</string>
+	<string name="toast_name_empty">Имя не может быть пустым</string>
+	<string name="toast_saved">Сохранено</string>
+	<string name="toast_cannot_delete_last">Нельзя удалить последний профиль</string>
+	<string name="ok">ОК</string>
+	<string name="cancel">Отмена</string>
 </resources>

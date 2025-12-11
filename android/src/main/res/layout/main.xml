@@ -149,6 +149,14 @@
             android:layout_height="wrap_content"
             android:singleLine="true"/>
 
+        <TextView android:text="@string/fallback_hosts"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <EditText android:id="@+id/fallback_hosts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:singleLine="true"/>
+
         <TextView android:text="@string/token"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>

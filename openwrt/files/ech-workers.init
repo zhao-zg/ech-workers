@@ -20,6 +20,7 @@ start_service() {
 	local listen_addr
 	local server_addr
 	local server_ip
+	local fallback_hosts
 	local token
 	local dns_server
 	local ech_domain
@@ -28,6 +29,7 @@ start_service() {
 	config_get listen_addr main listen_addr "0.0.0.0:20001"
 	config_get server_addr main server_addr ""
 	config_get server_ip main server_ip "mfa.gov.ua"
+	config_get fallback_hosts main fallback_hosts ""
 	config_get token main token ""
 	config_get dns_server main dns_server "dns.alidns.com/dns-query"
 	config_get ech_domain main ech_domain "cloudflare-ech.com"
@@ -54,6 +56,7 @@ start_service() {
 		-l "$listen_addr" \
 		-f "$server_addr" \
 		${server_ip:+-ip "$server_ip"} \
+		${fallback_hosts:+-fallback "$fallback_hosts"} \
 		${token:+-token "$token"} \
 		-dns "$dns_server" \
 		-ech "$ech_domain" \

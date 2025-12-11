@@ -37,6 +37,7 @@ public class Preferences
         public static final String ECH_DNS = "EchDns";
         public static final String ECH_DOMAIN = "EchDomain";
         public static final String PREF_IP = "PrefIp";
+        public static final String FALLBACK_HOSTS = "FallbackHosts";
         public static final String TOKEN = "Token";
         
         // 分流模式相关参数
@@ -284,6 +285,15 @@ public class Preferences
         public void setPrefIp(String ip) {
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putString(getKey(PREF_IP), ip);
+                editor.commit();
+        }
+
+        // ECH-tunnel: 反代Host
+        public String getFallbackHosts() { return prefs.getString(getKey(FALLBACK_HOSTS), ""); }
+
+        public void setFallbackHosts(String hosts) {
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putString(getKey(FALLBACK_HOSTS), hosts);
                 editor.commit();
         }
 

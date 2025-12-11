@@ -43,6 +43,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private EditText edittext_ech_dns;
     private EditText edittext_ech_domain;
     private EditText edittext_pref_ip;
+    private EditText edittext_fallback_hosts;
     private EditText edittext_token;
     private Spinner spinner_routing_mode;
     // IPv4/IPv6 默认启用，不在 UI 展示
@@ -66,6 +67,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         edittext_ech_dns = (EditText) findViewById(R.id.ech_dns);
         edittext_ech_domain = (EditText) findViewById(R.id.ech_domain);
         edittext_pref_ip = (EditText) findViewById(R.id.pref_ip);
+        edittext_fallback_hosts = (EditText) findViewById(R.id.fallback_hosts);
         edittext_token = (EditText) findViewById(R.id.token);
         spinner_routing_mode = (Spinner) findViewById(R.id.routing_mode_spinner);
         button_control = (Button) findViewById(R.id.control);
@@ -336,6 +338,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         edittext_ech_dns.setText(prefs.getEchDns());
         edittext_ech_domain.setText(prefs.getEchDomain());
         edittext_pref_ip.setText(prefs.getPrefIp());
+        edittext_fallback_hosts.setText(prefs.getFallbackHosts());
         edittext_token.setText(prefs.getToken());
         
         // 设置分流模式
@@ -354,6 +357,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         edittext_ech_dns.setEnabled(editable);
         edittext_ech_domain.setEnabled(editable);
         edittext_pref_ip.setEnabled(editable);
+        edittext_fallback_hosts.setEnabled(editable);
         edittext_token.setEnabled(editable);
         spinner_routing_mode.setEnabled(editable);
         
@@ -395,6 +399,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         prefs.setEchDns(edittext_ech_dns.getText().toString());
         prefs.setEchDomain(edittext_ech_domain.getText().toString());
         prefs.setPrefIp(edittext_pref_ip.getText().toString());
+        prefs.setFallbackHosts(edittext_fallback_hosts.getText().toString());
         prefs.setToken(edittext_token.getText().toString());
         
         // IPv4/IPv6 默认启用
