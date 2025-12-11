@@ -51,20 +51,40 @@ jobs:
         # 只安装必需的依赖,避免 apt-get update
         sudo apt-get install -y --no-install-recommends build-essential libncurses5-dev
     
+    - name: Build Go binary
+      run: |
+        cd tunnel
+        # Determine target architecture
+        case "${{ matrix.target.arch }}" in
+          x86_64)
+            export GOARCH=amd64
+            ;;
+          aarch64_generic)
+            export GOARCH=arm64
+            ;;
+          mipsel_24kc)
+            export GOARCH=mipsle
+            export GOMIPS=softfloat
+            ;;
+        esac
+        export GOOS=linux
+        export CGO_ENABLED=0
+        
+        # Build static binary
+        go build -v -trimpath -ldflags "-s -w -X main.version=1.1.0" \
+          -o ../openwrt/ech-workers ./cmd/ech-workers
+    
     - name: Copy package files
       run: |
         mkdir -p openwrt-sdk/package/ech-workers
         
-        # Copy OpenWrt package files
+        # Copy OpenWrt package files and pre-compiled binary
         cp -r openwrt/Makefile openwrt/files openwrt-sdk/package/ech-workers/
+        cp openwrt/ech-workers openwrt-sdk/package/ech-workers/
         
         # Copy LuCI app
         mkdir -p openwrt-sdk/package/luci-app-ech-workers
         cp -r openwrt/luci-app-ech-workers/* openwrt-sdk/package/luci-app-ech-workers/
-        
-        # Copy Go source with module files
-        mkdir -p openwrt-sdk/package/ech-workers/src
-        cp -r tunnel/* openwrt-sdk/package/ech-workers/src/
     
     - name: Configure minimal build
       working-directory: ./openwrt-sdk
@@ -84,8 +104,11 @@ jobs:
     - name: Build packages
       working-directory: ./openwrt-sdk
       run: |
-        # 同时编译两个包,减少make调用
-        make -j$(nproc) package/ech-workers/compile package/luci-app-ech-workers/compile
+        # Build ech-workers package
+        make package/ech-workers/compile V=s -j1
+        
+        # Build luci-app package
+        make package/luci-app-ech-workers/compile V=s -j1
     
     - name: Find packages
       id: find_packages
