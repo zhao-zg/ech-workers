@@ -33,6 +33,8 @@ import javax.net.ssl.SSLSocketFactory;
 
 public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
+    private static final int VPN_REQUEST_CODE = 100;
+    
     private SharedPreferences prefs;
     private Spinner profileSpinner;
     private Button btnSettings;
@@ -46,6 +48,7 @@ public class MainActivity extends Activity {
     private ArrayAdapter<String> profileAdapter;
     private String currentProfile;
     private boolean isRunning = false;
+    private boolean vpnPermissionRequested = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,16 +110,6 @@ public class MainActivity extends Activity {
         loadProfiles();
         checkServiceStatus();
         updateUI();
-    }
-
-    private void initViews() {
-        profileSpinner = findViewById(R.id.profile_spinner);
-        btnSettings = findViewById(R.id.btn_settings);
-        btnToggle = findViewById(R.id.btn_toggle);
-        flagIcon = findViewById(R.id.flag_icon);
-        statusText = findViewById(R.id.status_text);
-        ipText = findViewById(R.id.ip_text);
-        latencyText = findViewById(R.id.latency_text);
     }
 
     private void loadProfiles() {
@@ -187,6 +180,7 @@ public class MainActivity extends Activity {
     }
 
     private void startService() {
+        Log.d(TAG, "startService: Starting, vpnPermissionRequested=" + vpnPermissionRequested);
         if (currentProfile == null) return;
         
         String prefix = "profile_" + currentProfile + "_";
@@ -215,16 +209,22 @@ public class MainActivity extends Activity {
         statusText.setText(R.string.connecting);
         btnToggle.setEnabled(false);
         
-        // 启动 VPN 服务
+        // 启动 VPN 服务 - 防止重复请求权限
         Intent intent = VpnService.prepare(this);
-        if (intent != null) {
-            startActivityForResult(intent, 100);
-        } else {
+        if (intent != null && !vpnPermissionRequested) {
+            Log.d(TAG, "startService: Requesting VPN permission");
+            vpnPermissionRequested = true;
+            startActivityForResult(intent, VPN_REQUEST_CODE);
+        } else if (intent == null) {
+            Log.d(TAG, "startService: VPN permission already granted");
             startVpnService();
+        } else {
+            Log.d(TAG, "startService: VPN permission already requested, waiting for result");
         }
     }
     
     private void startVpnService() {
+        Log.d(TAG, "startVpnService: Starting VPN service");
         Intent intent = new Intent(this, TProxyService.class);
         intent.setAction(TProxyService.ACTION_CONNECT);
         startService(intent);
@@ -239,10 +239,16 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 100) {
+        Log.d(TAG, "onActivityResult: requestCode=" + requestCode + ", resultCode=" + resultCode);
+        
+        if (requestCode == VPN_REQUEST_CODE) {
+            vpnPermissionRequested = false; // 重置标志位
+            
             if (resultCode == RESULT_OK) {
+                Log.d(TAG, "onActivityResult: VPN permission granted");
                 startVpnService();
             } else {
+                Log.d(TAG, "onActivityResult: VPN permission denied");
                 Toast.makeText(this, "VPN权限被拒绝", Toast.LENGTH_SHORT).show();
                 btnToggle.setEnabled(true);
                 statusText.setText(R.string.not_connected);
