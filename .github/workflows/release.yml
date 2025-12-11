@@ -209,6 +209,8 @@ jobs:
     
     - name: Create Release
       uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
       with:
         name: Release ${{ steps.version.outputs.VERSION }}
         body: |
@@ -260,5 +262,3 @@ jobs:
         files: |
           artifacts/android/*.apk
           artifacts/openwrt/*.ipk
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
