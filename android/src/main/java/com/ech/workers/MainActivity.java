@@ -62,6 +62,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         loadProfiles();
+        checkServiceStatus();
         updateUI();
     }
 
@@ -212,6 +213,20 @@ public class MainActivity extends Activity {
         updateUI();
     }
 
+    private void checkServiceStatus() {
+        // 检查 VPN 服务是否真的在运行
+        android.net.ConnectivityManager cm = (android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        android.net.Network activeNetwork = cm.getActiveNetwork();
+        if (activeNetwork != null) {
+            android.net.NetworkCapabilities caps = cm.getNetworkCapabilities(activeNetwork);
+            if (caps != null && caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN)) {
+                isRunning = true;
+                return;
+            }
+        }
+        isRunning = false;
+    }
+    
     private void updateUI() {
         if (isRunning) {
             statusText.setText(R.string.connected);

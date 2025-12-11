@@ -13,9 +13,12 @@ apply plugin: 'com.android.application'
 def getVersionName() {
     // 1. 优先从环境变量获取（GitHub Actions）
     def envVersion = System.getenv('GITHUB_REF_NAME')
-    if (envVersion && envVersion.startsWith('v')) {
-        println("Using version from GITHUB_REF_NAME: $envVersion")
-        return envVersion.substring(1) // 移除 'v' 前缀
+    if (envVersion) {
+        def version = envVersion.replaceAll('^v', '')
+        if (version.matches('[0-9]+\\.[0-9]+\\.[0-9]+')) {
+            println("Using version from GITHUB_REF_NAME: $version")
+            return version
+        }
     }
     
     // 2. 从 git tag 获取版本号
