@@ -29,6 +29,7 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.23'
+        cache: true
     
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
@@ -38,16 +39,25 @@ jobs:
         echo "y" | sdkmanager "ndk;26.3.11579264"
         echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.3.11579264" >> $GITHUB_ENV
     
+    - name: Setup Go environment
+      run: |
+        go env -w GO111MODULE=on
+        go env -w GOPROXY=https://proxy.golang.org,direct
+    
     - name: Install gomobile
       run: |
         go install golang.org/x/mobile/cmd/gomobile@latest
-        gomobile init
+        go install golang.org/x/mobile/cmd/gobind@latest
+        export PATH=$PATH:$(go env GOPATH)/bin
+        gomobile init -ndk $ANDROID_NDK_HOME
     
     - name: Build Go library
-      working-directory: ./tunnel
       run: |
+        export PATH=$PATH:$(go env GOPATH)/bin
+        cd tunnel
         go mod download
-        gomobile bind -target=android -androidapi=24 -o ../android/src/main/jniLibs/workers.aar .
+        go mod verify
+        gomobile bind -target=android -androidapi=24 -o ../android/src/main/jniLibs/workers.aar -v .
     
     - name: Cache Gradle packages
       uses: actions/cache@v4
