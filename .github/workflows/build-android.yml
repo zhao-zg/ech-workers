@@ -46,18 +46,24 @@ jobs:
     
     - name: Install gomobile
       run: |
+        export PATH=$PATH:$(go env GOPATH)/bin
         go install golang.org/x/mobile/cmd/gomobile@latest
         go install golang.org/x/mobile/cmd/gobind@latest
-        export PATH=$PATH:$(go env GOPATH)/bin
         gomobile init
+        echo "Gomobile initialized successfully"
+    
+    - name: Prepare Go module
+      run: |
+        cd tunnel
+        go mod download
+        go mod verify
+        go list -m all
     
     - name: Build Go library
       run: |
         export PATH=$PATH:$(go env GOPATH)/bin
-        cd tunnel
-        go mod download
-        go mod verify
-        gomobile bind -target=android -androidapi=24 -o ../android/src/main/jniLibs/workers.aar -v .
+        mkdir -p android/src/main/jniLibs
+        gomobile bind -v -target=android -androidapi=24 -o android/src/main/jniLibs/workers.aar ./tunnel
     
     - name: Cache Gradle packages
       uses: actions/cache@v4
