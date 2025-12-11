@@ -18,6 +18,19 @@ jobs:
         submodules: recursive
         fetch-depth: 0
         lfs: true
+    
+    - name: Extract version from git
+      id: version
+      run: |
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          VERSION=$(echo "${{ github.ref }}" | sed 's/refs\/tags\/v//')
+        else
+          VERSION=$(git describe --tags --always 2>/dev/null | sed 's/^v//' || echo "1.0.12")
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+        echo "GITHUB_REF_NAME=$VERSION" >> $GITHUB_ENV
+        echo "Extracted version: $VERSION"
         
     - name: Initialize submodules
       run: |

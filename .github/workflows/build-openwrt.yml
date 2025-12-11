@@ -23,6 +23,20 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Extract version from git
+      id: version
+      run: |
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          VERSION=$(echo "${{ github.ref }}" | sed 's/refs\/tags\/v//')
+        else
+          VERSION=$(git describe --tags --always 2>/dev/null | sed 's/^v//' || echo "1.0.12")
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "PKG_VERSION_OVERRIDE=$VERSION" >> $GITHUB_ENV
+        echo "Extracted version: $VERSION"
     
     - name: Set up Go
       uses: actions/setup-go@v5
