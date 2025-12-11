@@ -66,12 +66,12 @@ jobs:
         mkdir -p openwrt-sdk/package/ech-workers/src
         cp -r tunnel/* openwrt-sdk/package/ech-workers/src/
     
-    - name: Configure package
+    - name: Build packages
       working-directory: ./openwrt-sdk
       run: |
-        make defconfig
-        make package/ech-workers/compile V=s
-        make package/luci-app-ech-workers/compile V=s
+        # 直接编译包,跳过耗时的 defconfig
+        make package/ech-workers/compile V=s -j$(nproc)
+        make package/luci-app-ech-workers/compile V=s -j$(nproc)
     
     - name: Find packages
       id: find_packages
