@@ -141,16 +141,20 @@ jobs:
     
     - name: Build Go binary
       run: |
+        # 获取版本号（移除 v 前缀）
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "Building version: $VERSION"
+        
         cd cmd/ech-workers
         case "${{ matrix.arch }}" in
           x86_64)
-            GOARCH=amd64 CGO_ENABLED=0 go build -o ../../openwrt/ech-workers -ldflags="-s -w" .
+            GOARCH=amd64 CGO_ENABLED=0 go build -o ../../openwrt/ech-workers -ldflags="-s -w -X github.com/zhao-zg/ech-workers/tunnel.Version=$VERSION" .
             ;;
           aarch64_generic)
-            GOARCH=arm64 CGO_ENABLED=0 go build -o ../../openwrt/ech-workers -ldflags="-s -w" .
+            GOARCH=arm64 CGO_ENABLED=0 go build -o ../../openwrt/ech-workers -ldflags="-s -w -X github.com/zhao-zg/ech-workers/tunnel.Version=$VERSION" .
             ;;
           mipsel_24kc)
-            GOARCH=mipsle GOMIPS=softfloat CGO_ENABLED=0 go build -o ../../openwrt/ech-workers -ldflags="-s -w" .
+            GOARCH=mipsle GOMIPS=softfloat CGO_ENABLED=0 go build -o ../../openwrt/ech-workers -ldflags="-s -w -X github.com/zhao-zg/ech-workers/tunnel.Version=$VERSION" .
             ;;
         esac
     

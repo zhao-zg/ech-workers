@@ -9,10 +9,11 @@ import (
 	"time"
 )
 
+// Version 在编译时通过 -ldflags "-X tunnel.Version=xxx" 注入
+// 如果未注入，使用开发版本号
+var Version = "dev"
+
 const (
-	// 当前版本
-	Version = "v1.0.10"
-	
 	// GitHub Release API
 	githubAPIURL = "https://api.github.com/repos/zhao-zg/ech-workers/releases/latest"
 )

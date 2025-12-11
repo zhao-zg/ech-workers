@@ -22,6 +22,7 @@ ECH-Workers 是一个支持 ECH（加密客户端 Hello）的 SOCKS5/HTTP 代理
 - ✅ **IPv4/IPv6**: 双栈支持
 - ✅ **DoH 支持**: DNS over HTTPS
 - ✅ **自动管理**: 中国 IP 列表自动下载和更新
+- ✅ **版本检查**: 自动检查更新
 
 ## 平台支持
 
@@ -31,6 +32,7 @@ ECH-Workers 是一个支持 ECH（加密客户端 Hello）的 SOCKS5/HTTP 代理
 - 分应用代理
 - 多配置文件管理
 - 自动更新 IP 列表
+- 显示出口 IP 和国家
 - 最低支持 Android 7.0 (API 24)
 
 [查看 Android 客户端详细说明 →](android/README.md)
@@ -41,6 +43,7 @@ ECH-Workers 是一个支持 ECH（加密客户端 Hello）的 SOCKS5/HTTP 代理
 - LuCI Web 配置界面
 - UCI 配置系统
 - 系统集成（init.d、hotplug）
+- 显示出口 IP 和国旗
 - 支持所有 OpenWrt 架构
 
 [查看 OpenWrt 客户端详细说明 →](openwrt/README.md)
@@ -298,6 +301,43 @@ A: Android (arm, arm64, x86, x86_64); OpenWrt (所有架构)
 4. 推送到分支 (`git push origin feature/amazing-feature`)
 5. 创建 Pull Request
 
+## 开发者指南
+
+### 发布新版本
+
+使用 `release.ps1` 脚本快速发布新版本：
+
+```powershell
+# 发布新版本（会自动创建 tag 并触发构建）
+.\release.ps1 -Version 1.0.11
+
+# 或者带自定义消息
+.\release.ps1 -Version 1.0.11 -Message "修复某某问题"
+```
+
+**工作流程：**
+1. 脚本会自动创建 git tag（格式：v1.0.11）
+2. 推送 tag 到 GitHub
+3. GitHub Actions 自动构建所有平台的安装包
+4. 版本号会自动注入到所有平台（无需手动修改代码）
+
+**版本号来源：**
+- CLI 工具：编译时通过 `-ldflags` 从 git tag 注入
+- Android：build.gradle 从 git tag 读取
+- OpenWrt：从 git tag 读取
+
+### 手动发布步骤
+
+如果不使用脚本，可以手动操作：
+
+```bash
+# 创建并推送 tag
+git tag -a v1.0.11 -m "版本说明"
+git push origin v1.0.11
+
+# GitHub Actions 会自动构建和发布
+```
+
 ## 许可证
 
 本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
@@ -310,14 +350,8 @@ A: Android (arm, arm64, x86, x86_64); OpenWrt (所有架构)
 
 ## 联系方式
 
-- GitHub: [@zhao-zg](https://github.com/zhao-zg)
-- Issues: [提交问题](https://github.com/zhao-zg/ech-workers/issues)
-
-## 联系方式
-
 - 项目主页: https://github.com/zhao-zg/ech-workers
 - 问题反馈: https://github.com/zhao-zg/ech-workers/issues
-- 邮箱: your-email@example.com
 
 ---
 
