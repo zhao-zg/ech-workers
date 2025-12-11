@@ -47,6 +47,20 @@ var (
 	chinaIPV6Ranges   []ipRangeV6
 
 	proxyListener net.Listener
+
+	// 性能优化：缓冲区池复用
+	bufferPool = sync.Pool{
+		New: func() interface{} {
+			return make([]byte, 32768)
+		},
+	}
+
+	// 性能优化：并发连接限制（防止资源耗尽）
+	maxConcurrent = make(chan struct{}, 1000) // 最多1000个并发连接
+
+	// 性能优化：IP查询缓存
+	ipCacheMu sync.RWMutex
+	ipCache   = make(map[string]bool) // 缓存IP是否在中国
 )
 
 // ipRange 表示一个IPv4 IP范围
@@ -236,73 +250,92 @@ func ipToUint32(ip net.IP) uint32 {
 
 // isChinaIP 检查IP是否在中国IP列表中（支持IPv4和IPv6）
 func isChinaIP(ipStr string) bool {
+	// 性能优化：查询缓存
+	ipCacheMu.RLock()
+	if cached, ok := ipCache[ipStr]; ok {
+		ipCacheMu.RUnlock()
+		return cached
+	}
+	ipCacheMu.RUnlock()
+
 	ip := net.ParseIP(ipStr)
 	if ip == nil {
 		return false
 	}
 
+	var result bool
+
 	// 检查IPv4
 	if ip.To4() != nil {
 		ipUint32 := ipToUint32(ip)
 		if ipUint32 == 0 {
-			return false
-		}
+			result = false
+		} else {
+			chinaIPRangesMu.RLock()
+			defer chinaIPRangesMu.RUnlock()
 
-		chinaIPRangesMu.RLock()
-		defer chinaIPRangesMu.RUnlock()
-
-		// 二分查找
-		left, right := 0, len(chinaIPRanges)
-		for left < right {
-			mid := (left + right) / 2
-			r := chinaIPRanges[mid]
-			if ipUint32 < r.start {
-				right = mid
-			} else if ipUint32 > r.end {
-				left = mid + 1
-			} else {
-				return true
+			// 二分查找
+			left, right := 0, len(chinaIPRanges)
+			for left < right {
+				mid := (left + right) / 2
+				r := chinaIPRanges[mid]
+				if ipUint32 < r.start {
+					right = mid
+				} else if ipUint32 > r.end {
+					left = mid + 1
+				} else {
+					result = true
+					break
+				}
 			}
 		}
-		return false
-	}
+	} else {
+		// 检查IPv6
+		ipBytes := ip.To16()
+		if ipBytes == nil {
+			result = false
+		} else {
+			var ipArray [16]byte
+			copy(ipArray[:], ipBytes)
 
-	// 检查IPv6
-	ipBytes := ip.To16()
-	if ipBytes == nil {
-		return false
-	}
+			chinaIPV6RangesMu.RLock()
+			defer chinaIPV6RangesMu.RUnlock()
 
-	var ipArray [16]byte
-	copy(ipArray[:], ipBytes)
+			// 二分查找IPv6
+			left, right := 0, len(chinaIPV6Ranges)
+			for left < right {
+				mid := (left + right) / 2
+				r := chinaIPV6Ranges[mid]
 
-	chinaIPV6RangesMu.RLock()
-	defer chinaIPV6RangesMu.RUnlock()
+				// 比较起始IP
+				cmpStart := compareIPv6(ipArray, r.start)
+				if cmpStart < 0 {
+					right = mid
+					continue
+				}
 
-	// 二分查找IPv6
-	left, right := 0, len(chinaIPV6Ranges)
-	for left < right {
-		mid := (left + right) / 2
-		r := chinaIPV6Ranges[mid]
+				// 比较结束IP
+				cmpEnd := compareIPv6(ipArray, r.end)
+				if cmpEnd > 0 {
+					left = mid + 1
+					continue
+				}
 
-		// 比较起始IP
-		cmpStart := compareIPv6(ipArray, r.start)
-		if cmpStart < 0 {
-			right = mid
-			continue
+				// 在范围内
+				result = true
+				break
+			}
 		}
-
-		// 比较结束IP
-		cmpEnd := compareIPv6(ipArray, r.end)
-		if cmpEnd > 0 {
-			left = mid + 1
-			continue
-		}
-
-		// 在范围内
-		return true
 	}
-	return false
+
+	// 性能优化：缓存查询结果（限制缓存大小防止内存泄漏）
+	ipCacheMu.Lock()
+	if len(ipCache) < 10000 { // 最多缓存10000个IP
+		ipCache[ipStr] = result
+	}
+	ipCacheMu.Unlock()
+
+	return result
 }
 
 // compareIPv6 比较两个IPv6地址，返回 -1, 0, 或 1
@@ -778,6 +811,15 @@ func runProxyServer(addr string) {
 
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
+
+	// 性能优化：并发连接限制
+	maxConcurrent <- struct{}{}
+	defer func() { <-maxConcurrent }()
+
+	// 延迟优化：禁用Nagle算法，减少小包延迟
+	if tcpConn, ok := conn.(*net.TCPConn); ok {
+		tcpConn.SetNoDelay(true)
+	}
 
 	clientAddr := conn.RemoteAddr().String()
 	conn.SetDeadline(time.Now().Add(30 * time.Second))
@@ -1279,10 +1321,10 @@ func handleTunnel(conn net.Conn, target, clientAddr string, mode int, firstFrame
 
 	var mu sync.Mutex
 
-	// 保活
+	// 保活（性能优化：减少ping频率）
 	stopPing := make(chan bool)
 	go func() {
-		ticker := time.NewTicker(10 * time.Second)
+		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
 		for {
 			select {
@@ -1302,7 +1344,7 @@ func handleTunnel(conn net.Conn, target, clientAddr string, mode int, firstFrame
 	// 如果没有预设的 firstFrame，尝试读取第一帧数据
 	// SOCKS5 模式会尝试读取，透明代理模式也需要读取第一帧应用数据
 	if firstFrame == "" && (mode == modeSOCKS5 || mode == modeTransparent) {
-		_ = conn.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+		_ = conn.SetReadDeadline(time.Now().Add(50 * time.Millisecond))
 		buffer := make([]byte, 32768)
 		n, _ := conn.Read(buffer)
 		_ = conn.SetReadDeadline(time.Time{})
@@ -1350,12 +1392,14 @@ func handleTunnel(conn net.Conn, target, clientAddr string, mode int, firstFrame
 
 	log.Printf("[代理] %s 已连接: %s", clientAddr, target)
 
-	// 双向转发
+	// 双向转发（性能优化：使用缓冲区池）
 	done := make(chan bool, 2)
 
 	// Client -> Server
 	go func() {
-		buf := make([]byte, 32768)
+		buf := bufferPool.Get().([]byte)
+		defer bufferPool.Put(buf)
+		
 		for {
 			n, err := conn.Read(buf)
 			if err != nil {
@@ -1428,6 +1472,11 @@ func handleDirectConnection(conn net.Conn, target, clientAddr string, mode int, 
 		return fmt.Errorf("直连失败: %w", err)
 	}
 	defer targetConn.Close()
+
+	// 延迟优化：禁用Nagle算法
+	if tcpConn, ok := targetConn.(*net.TCPConn); ok {
+		tcpConn.SetNoDelay(true)
+	}
 
 	// 发送成功响应
 	if err := sendSuccessResponse(conn, mode); err != nil {
