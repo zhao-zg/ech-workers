@@ -78,20 +78,38 @@ jobs:
       with:
         gradle-version: 8.5
     
-    - name: Create VERSION file
+    - name: Create VERSION file and set environment
       run: |
-        echo "${{ github.ref_name }}" > VERSION
+        VERSION="${{ github.ref_name }}"
+        echo "Creating VERSION file with: $VERSION"
+        echo "$VERSION" > VERSION
+        echo "VERSION file created:"
         cat VERSION
+        echo "Setting GITHUB_REF_NAME environment variable"
+        echo "GITHUB_REF_NAME=$VERSION" >> $GITHUB_ENV
+    
+    - name: Verify version setup
+      run: |
+        echo "GITHUB_REF_NAME env var: $GITHUB_REF_NAME"
+        echo "VERSION file content:"
+        cat VERSION
+        echo "Git tag:"
+        git describe --tags --abbrev=0 || echo "No git tag found"
     
     - name: Build APK (Debug)
       working-directory: ./android
       env:
         GITHUB_REF_NAME: ${{ github.ref_name }}
       run: |
-        echo "Building with version: $GITHUB_REF_NAME"
+        echo "========================================="
+        echo "Building APK with version: $GITHUB_REF_NAME"
+        echo "========================================="
         chmod +x gradlew
         ./gradlew clean
-        ./gradlew assembleDebug --stacktrace
+        ./gradlew assembleDebug --info | grep -E "(version|VERSION|Using version)"
+        echo "========================================="
+        echo "Build complete, checking outputs:"
+        ls -lh build/outputs/apk/debug/ || true
     
     - name: Upload APK
       uses: actions/upload-artifact@v4
