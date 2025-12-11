@@ -157,9 +157,12 @@ jobs:
     - name: Build OpenWrt packages
       run: |
         cd openwrt-sdk
-        echo "src-link custom $(pwd)/../openwrt" >> feeds.conf.default
-        ./scripts/feeds update custom
-        ./scripts/feeds install -a -p custom
+        # Copy package directories directly to SDK
+        mkdir -p package/ech-workers
+        cp -r ../openwrt/* package/ech-workers/
+        mkdir -p package/luci-app-ech-workers
+        cp -r ../openwrt/luci-app-ech-workers/* package/luci-app-ech-workers/
+        # Build packages
         make package/ech-workers/compile V=s
         make package/luci-app-ech-workers/compile V=s
     
