@@ -76,8 +76,14 @@ msgstr "高级设置"
 msgid "Listen Address"
 msgstr "监听地址"
 
+msgid "Listen Port"
+msgstr "监听端口"
+
 msgid "Local proxy listen address"
 msgstr "本地代理监听地址"
+
+msgid "Local proxy listen port"
+msgstr "本地代理监听端口"
 
 msgid "Server IP"
 msgstr "服务器IP"

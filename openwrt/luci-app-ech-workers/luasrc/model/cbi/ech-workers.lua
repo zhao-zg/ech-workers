@@ -52,10 +52,11 @@ s = m:section(TypedSection, "ech-workers", translate("Advanced Settings"))
 s.anonymous = true
 s.addremove = false
 
-o = s:option(Value, "listen_addr", translate("Listen Address"))
-o.description = translate("Local proxy listen address")
-o.default = "0.0.0.0:20001"
-o.datatype = "ipaddr"
+o = s:option(Value, "listen_port", translate("Listen Port"))
+o.description = translate("Local proxy listen port")
+o.default = "20001"
+o.datatype = "port"
+o.placeholder = "20001"
 
 o = s:option(Value, "server_ip", translate("Server IP"))
 o.description = translate("Preferred IP address or domain to bypass DNS")

@@ -14,50 +14,73 @@ def getVersionName() {
     println("========== Version Detection Debug ==========")
     println("Current directory: ${projectDir}")
     println("Root directory: ${rootDir}")
-    
+
+    // 0. 优先使用 gradle property（CI 传 -PAPP_VERSION=...）
+    if (project.hasProperty('APP_VERSION')) {
+        def prop = project.property('APP_VERSION')?.toString()?.trim()
+        println("0. APP_VERSION property: ${prop}")
+        if (prop && prop.toLowerCase() != 'null') {
+            def version = prop.replaceAll('^v', '')
+            if (version.matches('[0-9]+\\.[0-9]+\\.[0-9]+')) {
+                println("✓ Using version from APP_VERSION property: $version")
+                return version
+            }
+        }
+    }
+
     // 1. 优先从环境变量获取（GitHub Actions）
-    def envVersion = System.getenv('GITHUB_REF_NAME')
-    println("1. GITHUB_REF_NAME: ${envVersion}")
-    if (envVersion) {
-        def version = envVersion.replaceAll('^v', '')
+    def envVersion = System.getenv('GITHUB_REF_NAME') ?: System.getenv('GITHUB_REF') ?: System.getenv('REF_NAME')
+    println("1. GITHUB_REF_NAME / GITHUB_REF: ${envVersion}")
+    if (envVersion && envVersion.toString().trim() && envVersion.toString().trim().toLowerCase() != 'null') {
+        def version = envVersion.replaceAll('^v', '').toString().trim()
         if (version.matches('[0-9]+\\.[0-9]+\\.[0-9]+')) {
             println("✓ Using version from GITHUB_REF_NAME: $version")
             return version
         }
     }
-    
+
     // 2. 从 VERSION 文件读取（GitHub Actions 创建）
     def versionFile = file('../VERSION')
     println("2. VERSION file path: ${versionFile.absolutePath}, exists: ${versionFile.exists()}")
     if (versionFile.exists()) {
-        def version = versionFile.text.trim().replaceAll('^v', '')
-        if (version && version.matches('[0-9]+\\.[0-9]+\\.[0-9]+')) {
-            println("✓ Using version from VERSION file: $version")
-            return version
+        def versionRaw = versionFile.text?.trim()
+        println("   VERSION file content: ${versionRaw}")
+        if (versionRaw && versionRaw.toLowerCase() != 'null') {
+            def version = versionRaw.replaceAll('^v', '')
+            if (version && version.matches('[0-9]+\\.[0-9]+\\.[0-9]+')) {
+                println("✓ Using version from VERSION file: $version")
+                return version
+            }
         }
     }
-    
+
     // 3. 从 git tag 获取版本号
     try {
         println("3. Trying git describe...")
         def gitDir = file('..').absolutePath
         def process = ['git', '-C', gitDir, 'describe', '--tags', '--abbrev=0'].execute()
+        def output = new StringBuffer()
+        def err = new StringBuffer()
+        process.consumeProcessOutput(output, err)
         process.waitFor()
         println("   Git exit code: ${process.exitValue()}")
         if (process.exitValue() == 0) {
-            def gitVersion = process.text.trim()
+            def gitVersion = output.toString().trim()
             println("   Git output: ${gitVersion}")
-            if (gitVersion && gitVersion.startsWith('v')) {
+            if (gitVersion && gitVersion.toLowerCase() != 'null' && gitVersion.startsWith('v')) {
                 def version = gitVersion.substring(1)
-                println("✓ Using version from git tag: $version")
-                return version
+                if (version.matches('[0-9]+\\.[0-9]+\\.[0-9]+')) {
+                    println("✓ Using version from git tag: $version")
+                    return version
+                }
             }
+        } else {
+            println("   Git stderr: ${err.toString().trim()}")
         }
     } catch (Exception e) {
         println("⚠ Git command failed: ${e.message}")
-        e.printStackTrace()
     }
-    
+
     // 4. 从 tunnel/version.go 读取版本号（备用方案）
     def goVersionFile = file('../tunnel/version.go')
     println("4. version.go path: ${goVersionFile.absolutePath}, exists: ${goVersionFile.exists()}")
@@ -71,7 +94,7 @@ def getVersionName() {
             return version
         }
     }
-    
+
     // 5. 如果都失败，返回默认版本
     def defaultVersion = "1.0.12"
     println("⚠ Warning: Could not determine version, using default: $defaultVersion")
@@ -99,10 +122,10 @@ android {
                 targetSdkVersion 34
                 versionCode getVersionCode()
                 versionName getVersionName()
-                
+
                 // 添加 BuildConfig 字段以便在代码中访问版本号
                 buildConfigField "String", "VERSION_NAME", "\"${getVersionName()}\""
-                
+
                 // archivesName 不在 defaultConfig 作用域，移至 base 扩展
                 ndk {
                         abiFilters "armeabi-v7a", "arm64-v8a",'x86','x86_64'
@@ -114,7 +137,7 @@ android {
                         }
                 }
         }
-        
+
         buildFeatures {
                 buildConfig true
         }
@@ -159,65 +182,67 @@ signingConfigs {
                 }
         }
 
-	def propsFile = rootProject.file('store.properties')
-	def configName = 'release'
+    def propsFile = rootProject.file('store.properties')
+    def configName = 'release'
 
-	if (propsFile.exists() && android.signingConfigs.hasProperty(configName)) {
-		def props = new Properties()
-		props.load(new FileInputStream(propsFile))
-		if (props!=null && props.containsKey('storeFile')) {
-			android.signingConfigs[configName].storeFile = rootProject.file(props['storeFile'])
-			android.signingConfigs[configName].storePassword = props['storePassword']
-			android.signingConfigs[configName].keyAlias = props['keyAlias']
-			android.signingConfigs[configName].keyPassword = props['keyPassword']
-		}
-	}
+    if (propsFile.exists() && android.signingConfigs.hasProperty(configName)) {
+        def props = new Properties()
+        props.load(new FileInputStream(propsFile))
+        if (props!=null && props.containsKey('storeFile')) {
+            android.signingConfigs[configName].storeFile = rootProject.file(props['storeFile'])
+            android.signingConfigs[configName].storePassword = props['storePassword']
+            android.signingConfigs[configName].keyAlias = props['keyAlias']
+            android.signingConfigs[configName].keyPassword = props['keyPassword']
+        }
+    }
 
-	externalNativeBuild {
-		ndkBuild {
-			path "src/main/jni/Android.mk"
-		}
-	}
+    externalNativeBuild {
+        ndkBuild {
+            path "src/main/jni/Android.mk"
+        }
+    }
 
-	lintOptions {
-		checkReleaseBuilds false
-		// Or, if you prefer, you can continue to check for errors in release builds,
-		// but continue the build even when errors are found:
-		abortOnError false
-	}
+    lintOptions {
+        checkReleaseBuilds false
+        // Or, if you prefer, you can continue to check for errors in release builds,
+        // but continue the build even when errors are found:
+        abortOnError false
+    }
 
-	dependenciesInfo {
-		// Disables dependency metadata when building APKs.
-		includeInApk = false
-		// Disables dependency metadata when building Android App Bundles.
-		includeInBundle = false
-	}
+    dependenciesInfo {
+        // Disables dependency metadata when building APKs.
+        includeInApk = false
+        // Disables dependency metadata when building Android App Bundles.
+        includeInBundle = false
+    }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    // 设置APK输出文件名
+    // 设置APK输出文件名（使用 safeVersion，避免字面 "null"）
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
+            def rawVersion = variant.versionName
+            def derived = (rawVersion != null) ? rawVersion.toString().trim() : ''
+            def safeVersion = (derived && derived.toLowerCase() != 'null') ? derived : getVersionName()
+
             def abi = output.getFilter(com.android.build.OutputFile.ABI)
-            // 确保使用正确的版本号
-            def versionName = variant.versionName ?: getVersionName()
             def buildType = variant.buildType.name
-            
+
             if (abi != null) {
                 // 带架构的APK
                 if (buildType == 'release') {
-                    outputFileName = "com.ech.workers-${versionName}-${abi}-release.apk"
+                    outputFileName = "com.ech.workers-${safeVersion}-${abi}-release.apk"
                 } else {
-                    outputFileName = "com.ech.workers-${versionName}-${abi}.apk"
+                    outputFileName = "com.ech.workers-${safeVersion}-${abi}.apk"
                 }
             } else {
                 // 通用APK
                 if (buildType == 'release') {
-                    outputFileName = "com.ech.workers-${versionName}-universal-release.apk"
+                    outputFileName = "com.ech.workers-${safeVersion}-universal-release.apk"
                 } else {
-                    outputFileName = "com.ech.workers-${versionName}-universal.apk"
+                    outputFileName = "com.ech.workers-${safeVersion}-universal.apk"
                 }
             }
         }

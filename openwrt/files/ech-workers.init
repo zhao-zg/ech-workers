@@ -153,7 +153,7 @@ start_service() {
 		return 0
 	fi
 	
-	local listen_addr
+	local listen_port
 	local server_addr
 	local server_ip
 	local fallback_hosts
@@ -162,7 +162,7 @@ start_service() {
 	local ech_domain
 	local routing_mode
 	
-	config_get listen_addr main listen_addr "0.0.0.0:20001"
+	config_get listen_port main listen_port "20001"
 	config_get server_addr main server_addr ""
 	config_get server_ip main server_ip "mfa.gov.ua"
 	config_get fallback_hosts main fallback_hosts ""
@@ -181,6 +181,9 @@ start_service() {
 		server_addr="${server_addr}:443"
 		logger -t ech-workers "Added default port 443 to server_addr: $server_addr"
 	fi
+	
+	# 构造完整的监听地址
+	local listen_addr="0.0.0.0:${listen_port}"
 	
 	# 确保 IP 列表文件存在
 	mkdir -p "$CONF_DIR"
@@ -211,16 +214,13 @@ start_service() {
 	
 	procd_close_instance
 	
-	# 提取端口号
-	local listen_port="${listen_addr##*:}"
-	
 	# 先清理旧的防火墙规则
 	cleanup_firewall
 	
 	# 设置新的防火墙规则
 	setup_firewall "$routing_mode" "$listen_port"
 	
-	logger -t ech-workers "Started with routing mode: $routing_mode (manual proxy mode)"
+	logger -t ech-workers "Started with routing mode: $routing_mode on port $listen_port"
 }
 
 stop_service() {

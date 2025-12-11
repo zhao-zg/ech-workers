@@ -10,6 +10,7 @@ import android.net.VpnService;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -19,6 +20,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -29,6 +32,7 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
 public class MainActivity extends Activity {
+    private static final String TAG = "MainActivity";
     private SharedPreferences prefs;
     private Spinner profileSpinner;
     private Button btnSettings;
@@ -46,13 +50,49 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
         
-        prefs = getSharedPreferences("profiles", MODE_PRIVATE);
-        
-        initViews();
-        loadProfiles();
-        setupListeners();
+        // 设置全局异常处理器
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread thread, Throwable throwable) {
+                Log.e(TAG, "Uncaught exception: ", throwable);
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                throwable.printStackTrace(pw);
+                Log.e(TAG, "Stack trace: " + sw.toString());
+                
+                // 显示错误信息
+                final String errorMsg = throwable.getMessage();
+                new Handler(Looper.getMainLooper()).post(() -> 
+                    Toast.makeText(MainActivity.this, "应用崩溃: " + errorMsg, Toast.LENGTH_LONG).show()
+                );
+                
+    private void initViews() {
+        Log.d(TAG, "initViews: Starting");
+        try {
+            profileSpinner = findViewById(R.id.profile_spinner);
+            btnSettings = findViewById(R.id.btn_settings);
+            btnToggle = findViewById(R.id.btn_toggle);
+            flagIcon = findViewById(R.id.flag_icon);
+            statusText = findViewById(R.id.status_text);
+            ipText = findViewById(R.id.ip_text);
+            latencyText = findViewById(R.id.latency_text);
+            Log.d(TAG, "initViews: All views found successfully");
+        } catch (Exception e) {
+            Log.e(TAG, "initViews: Failed to find views", e);
+            throw e;
+        }
+    }       
+            prefs = getSharedPreferences("profiles", MODE_PRIVATE);
+            
+            initViews();
+            loadProfiles();
+            setupListeners();
+            Log.d(TAG, "onCreate: Initialization completed");
+        } catch (Exception e) {
+            Log.e(TAG, "onCreate: Exception during initialization", e);
+            Toast.makeText(this, "初始化失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override
