@@ -30,8 +30,8 @@ setup_firewall() {
 	[ "$routing_mode" = "none" ] && return 0
 	
 	# ======== IPv4 规则 ========
-	# 创建自定义链
-	iptables -t nat -N ECH_WORKERS
+	# 创建自定义链(如果不存在)
+	iptables -t nat -N ECH_WORKERS 2>/dev/null || true
 	
 	# 跳过目标为路由器自身的流量（重要！避免破坏内网访问）
 	iptables -t nat -A ECH_WORKERS -m addrtype --dst-type LOCAL -j RETURN
@@ -71,16 +71,18 @@ setup_firewall() {
 	iptables -t nat -A ECH_WORKERS -p tcp -j REDIRECT --to-ports $listen_port
 	
 	# 应用规则到PREROUTING（LAN客户端流量）
-	iptables -t nat -A PREROUTING -i br-lan -p tcp -j ECH_WORKERS
+	iptables -t nat -C PREROUTING -i br-lan -p tcp -j ECH_WORKERS 2>/dev/null || \
+		iptables -t nat -A PREROUTING -i br-lan -p tcp -j ECH_WORKERS
 	
 	# 应用规则到OUTPUT（路由器自身流量）
-	iptables -t nat -A OUTPUT -p tcp -j ECH_WORKERS
+	iptables -t nat -C OUTPUT -p tcp -j ECH_WORKERS 2>/dev/null || \
+		iptables -t nat -A OUTPUT -p tcp -j ECH_WORKERS
 	
 	logger -t ech-workers "IPv4 transparent proxy enabled on port $listen_port (LAN + Router)"
 	
 	# ======== IPv6 规则 ========
-	# 创建自定义链
-	ip6tables -t nat -N ECH_WORKERS
+	# 创建自定义链(如果不存在)
+	ip6tables -t nat -N ECH_WORKERS 2>/dev/null || true
 	
 	# 跳过目标为路由器自身的流量（重要！避免破坏内网访问）
 	ip6tables -t nat -A ECH_WORKERS -m addrtype --dst-type LOCAL -j RETURN
@@ -116,10 +118,12 @@ setup_firewall() {
 	ip6tables -t nat -A ECH_WORKERS -p tcp -j REDIRECT --to-ports $listen_port
 	
 	# 应用规则到PREROUTING（LAN客户端流量）
-	ip6tables -t nat -A PREROUTING -i br-lan -p tcp -j ECH_WORKERS
+	ip6tables -t nat -C PREROUTING -i br-lan -p tcp -j ECH_WORKERS 2>/dev/null || \
+		ip6tables -t nat -A PREROUTING -i br-lan -p tcp -j ECH_WORKERS
 	
 	# 应用规则到OUTPUT（路由器自身流量）
-	ip6tables -t nat -A OUTPUT -p tcp -j ECH_WORKERS
+	ip6tables -t nat -C OUTPUT -p tcp -j ECH_WORKERS 2>/dev/null || \
+		ip6tables -t nat -A OUTPUT -p tcp -j ECH_WORKERS
 	
 	logger -t ech-workers "IPv6 transparent proxy enabled on port $listen_port (LAN + Router)"
 }
