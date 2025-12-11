@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 	
-	"github.com/your-repo/ech-workers/tunnel"
+	"github.com/zhao-zg/ech-workers/tunnel"
 )
 
 var (
