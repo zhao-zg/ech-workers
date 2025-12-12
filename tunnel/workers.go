@@ -104,21 +104,14 @@ func StartSocksProxy(host, wsServer, dns, ech, ip, fallback, tkn string) error {
 		routingMode = "global"
 	}
 
-	// 先启动SOCKS5代理服务器,不等待ECH配置
+	// 尝试获取ECH配置,但失败不阻止启动
+	if err := prepareECH(); err != nil {
+		log.Printf("[警告] ECH配置获取失败: %v", err)
+		log.Printf("[提示] 将在没有ECH的情况下运行,可能影响某些功能")
+		// 不返回错误,继续启动
+	}
+
 	go runProxyServer(listenAddr)
-	log.Printf("[客户端] SOCKS5代理已启动在 %s", listenAddr)
-
-	// 在后台异步获取ECH配置,不阻塞服务启动
-	go func() {
-		log.Printf("[客户端] 后台获取ECH配置...")
-		if err := prepareECH(); err != nil {
-			log.Printf("[警告] ECH配置获取失败: %v", err)
-			log.Printf("[提示] SOCKS5代理可正常使用,但透明代理功能可能受限")
-		} else {
-			log.Printf("[客户端] ECH配置获取成功,透明代理功能已就绪")
-		}
-	}()
-
 	return nil
 }
 
