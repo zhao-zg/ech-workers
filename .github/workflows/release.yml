@@ -1,5 +1,7 @@
 name: Create Release
 
+retention-days: 1
+
 on:
   push:
     tags:
@@ -296,3 +298,4 @@ jobs:
         files: |
           artifacts/android/*.apk
           artifacts/openwrt/*.ipk
+

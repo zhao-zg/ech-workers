@@ -1,5 +1,7 @@
 name: Build Android APK
 
+retention-days: 1
+
 on:
   push:
     branches: [ main, master ]
@@ -204,3 +206,4 @@ jobs:
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
