@@ -1,7 +1,5 @@
 name: Build OpenWrt Package
 
-retention-days: 1
-
 on:
   push:
     branches: [ main, master ]
